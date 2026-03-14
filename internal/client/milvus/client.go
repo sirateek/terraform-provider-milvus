@@ -11,8 +11,12 @@ func ProvideMilvusClient(config config.Milvus) (*milvusclient.Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	return milvusclient.New(ctx, &milvusclient.ClientConfig{
-		Address:  config.Address,
-		Username: config.Username,
-		Password: config.Password,
+		Address:       config.Address,
+		Username:      config.Username,
+		Password:      config.Password,
+		DBName:        config.DBName,
+		EnableTLSAuth: config.EnableTLS,
+		APIKey:        config.APIKey,
+		ServerVersion: config.ServerVersion,
 	})
 }

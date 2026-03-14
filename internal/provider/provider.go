@@ -44,7 +44,7 @@ func (p *ScaffoldingProvider) Metadata(ctx context.Context, req provider.Metadat
 func (p *ScaffoldingProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"host": schema.StringAttribute{
+			"address": schema.StringAttribute{
 				MarkdownDescription: "Address of Milvus",
 				Optional:            true,
 			},
@@ -56,6 +56,23 @@ func (p *ScaffoldingProvider) Schema(ctx context.Context, req provider.SchemaReq
 				MarkdownDescription: "Password of Milvus",
 				Optional:            true,
 				Sensitive:           true,
+			},
+			"db_name": schema.StringAttribute{
+				MarkdownDescription: "Database name of Milvus to manage",
+				Optional:            true,
+			},
+			"enable_tls": schema.BoolAttribute{
+				MarkdownDescription: "Enable TLS for Milvus connection",
+				Optional:            true,
+			},
+			"api_key": schema.StringAttribute{
+				MarkdownDescription: "API key of Milvus",
+				Optional:            true,
+				Sensitive:           true,
+			},
+			"server_version": schema.StringAttribute{
+				MarkdownDescription: "Version of Milvus to manage",
+				Optional:            true,
 			},
 		},
 	}
