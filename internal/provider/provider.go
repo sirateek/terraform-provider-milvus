@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/sirateek/terraform-provider-milvus/internal/client/milvus"
 	config2 "github.com/sirateek/terraform-provider-milvus/internal/config"
+	"github.com/sirateek/terraform-provider-milvus/internal/resources"
 )
 
 // Ensure ScaffoldingProvider satisfies various provider interfaces.
@@ -90,7 +91,9 @@ func (p *ScaffoldingProvider) Configure(ctx context.Context, req provider.Config
 }
 
 func (p *ScaffoldingProvider) Resources(ctx context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		resources.NewMilvusCollectionResource,
+	}
 }
 
 func (p *ScaffoldingProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
