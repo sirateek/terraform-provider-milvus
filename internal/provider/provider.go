@@ -5,7 +5,6 @@ package provider
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -14,7 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/sirateek/terraform-provider-milvus/internal/client/milvus"
+	config2 "github.com/sirateek/terraform-provider-milvus/internal/config"
 )
 
 // Ensure ScaffoldingProvider satisfies various provider interfaces.
@@ -29,11 +29,6 @@ type ScaffoldingProvider struct {
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
 	version string
-}
-
-// ScaffoldingProviderModel describes the provider data model.
-type ScaffoldingProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
 }
 
 func (p *ScaffoldingProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -79,19 +74,17 @@ func (p *ScaffoldingProvider) Schema(ctx context.Context, req provider.SchemaReq
 }
 
 func (p *ScaffoldingProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var data ScaffoldingProviderModel
-
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
+	config, diags := config2.ProvideMilvusConfig(ctx, req)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Configuration values are now available.
-	// if data.Endpoint.IsNull() { /* ... */ }
-
-	// Example client configuration for data sources and resources
-	client := http.DefaultClient
+	client, milvusClientDiag := milvus.ProvideMilvusClient(config)
+	resp.Diagnostics.Append(milvusClientDiag)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }
