@@ -103,7 +103,7 @@ jobs:
           terraform_wrapper: false
       - name: Wait for Milvus to be ready
         run: |
-          timeout 300 bash -c 'until curl -f http://localhost:9091/healthz 2>/dev/null; do sleep 2; done'
+          timeout 300 bash -c 'until curl -f http://milvus:9091/healthz 2>/dev/null; do sleep 2; done'
           echo "Milvus is ready"
       - run: go mod download
       - env:
