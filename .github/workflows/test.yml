@@ -104,6 +104,6 @@ jobs:
       - run: go mod download
       - env:
           TF_ACC: "1"
-          MILVUS_ADDRESS: "localhost:19530"
-        run: TF_ACC=1 make test
+          MILVUS_ADDRESS: "milvus:19530"
+        run: make test
         timeout-minutes: 10
