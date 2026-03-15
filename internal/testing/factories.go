@@ -9,11 +9,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
-// ProtoV6ProviderFactories holds the provider factories registered for testing
+// ProtoV6ProviderFactories holds the provider factories registered for testing.
 var ProtoV6ProviderFactories map[string]func() (tfprotov6.ProviderServer, error)
 
 var (
-	// Mutex protects access to ProtoV6ProviderFactories
+	// Mutex protects access to ProtoV6ProviderFactories.
 	factoriesMutex sync.RWMutex
 )
 

@@ -18,7 +18,7 @@ import (
 
 // Blank import of resources to trigger resource registration during init()
 // This must happen before the provider is used, but doesn't require
-// a direct import at the package level
+// a direct import at the package level.
 var _ struct{} = struct{}{} // dummy statement
 
 func init() {

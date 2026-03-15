@@ -14,7 +14,7 @@ import (
 // This holds a reference to the configured Milvus client for verification purposes.
 var testAccProviderConfig *testingpkg.ProviderTestConfig
 
-// testAccProtoV6ProviderFactories will be populated with provider factories at test runtime
+// testAccProtoV6ProviderFactories will be populated with provider factories at test runtime.
 var testAccProtoV6ProviderFactories map[string]func() (tfprotov6.ProviderServer, error)
 
 func init() {

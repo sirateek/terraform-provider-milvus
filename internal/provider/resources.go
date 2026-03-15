@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-// resourceFactories holds the registered resource factories
+// resourceFactories holds the registered resource factories.
 var (
 	resourceFactoriesMutex sync.RWMutex
 	resourceFactories      []func() resource.Resource
@@ -18,14 +18,14 @@ var (
 
 // RegisterResource registers a resource factory with the provider
 // This is called by the resources package to register its resources
-// without creating a circular import dependency
+// without creating a circular import dependency.
 func RegisterResource(factory func() resource.Resource) {
 	resourceFactoriesMutex.Lock()
 	defer resourceFactoriesMutex.Unlock()
 	resourceFactories = append(resourceFactories, factory)
 }
 
-// getResources returns all registered resource factories
+// getResources returns all registered resource factories.
 func getResources() []func() resource.Resource {
 	resourceFactoriesMutex.RLock()
 	defer resourceFactoriesMutex.RUnlock()
@@ -37,7 +37,7 @@ func getResources() []func() resource.Resource {
 }
 
 // Resources returns the provider's resources
-// This method is part of the provider.Provider interface implementation
+// This method is part of the provider.Provider interface implementation.
 func (p *MilvusProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return getResources()
 }

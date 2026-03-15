@@ -237,6 +237,7 @@ resource "milvus_index" "test" {
 `, collectionName)
 }
 
+// nolint:unparam
 func testAccCheckIndexExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]

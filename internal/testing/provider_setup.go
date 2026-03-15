@@ -80,7 +80,7 @@ func PreCheck(t *testing.T) *ProviderTestConfig {
 	}
 }
 
-// isCollectionNotFoundError checks if the error indicates a collection not found
+// isCollectionNotFoundError checks if the error indicates a collection not found.
 func isCollectionNotFoundError(errStr string) bool {
 	return containsSubstring(errStr, "not found") ||
 		containsSubstring(errStr, "does not exist") ||
@@ -88,7 +88,7 @@ func isCollectionNotFoundError(errStr string) bool {
 		containsSubstring(errStr, "can't find collection")
 }
 
-// containsSubstring checks if a string contains a substring
+// containsSubstring checks if a string contains a substring.
 func containsSubstring(str, substr string) bool {
 	if len(str) == 0 || len(substr) == 0 {
 		return false
