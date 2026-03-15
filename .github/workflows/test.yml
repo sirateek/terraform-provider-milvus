@@ -121,5 +121,5 @@ jobs:
       - env:
           TF_ACC: "1"
           MILVUS_ADDRESS: "localhost:19530"
-        run: go test -v -cover ./internal/resources/
+        run: TF_ACC=1 make test
         timeout-minutes: 10
