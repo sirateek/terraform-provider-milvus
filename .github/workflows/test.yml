@@ -103,8 +103,19 @@ jobs:
           terraform_wrapper: false
       - name: Wait for Milvus to be ready
         run: |
-          timeout 300 bash -c 'until curl -f http://milvus:9091/healthz 2>/dev/null; do sleep 2; done'
-          echo "Milvus is ready"
+          echo "Waiting for Milvus to be ready..."
+          for i in {1..150}; do
+            echo "Attempt $i/150: Checking Milvus at localhost:9091..."
+            if curl -sf http://localhost:9091/healthz > /dev/null 2>&1; then
+              echo "✓ Milvus is ready!"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "✗ Timeout waiting for Milvus after 5 minutes"
+          echo "Checking if port 9091 is open..."
+          netstat -tlnp | grep 9091 || ss -tlnp | grep 9091 || echo "Port not found"
+          exit 1
       - run: go mod download
       - env:
           TF_ACC: "1"
