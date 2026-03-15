@@ -73,11 +73,6 @@ jobs:
           ETCD_AUTO_COMPACTION_RETENTION: "1000"
           ETCD_QUOTA_BACKEND_BYTES: "4294967296"
           ETCD_SNAPSHOT_COUNT: "50000"
-        options: >-
-          --health-cmd "etcdctl endpoint health"
-          --health-interval 30s
-          --health-timeout 20s
-          --health-retries 3
         ports:
           - 2379:2379
       minio:
@@ -85,11 +80,6 @@ jobs:
         env:
           MINIO_ACCESS_KEY: minioadmin
           MINIO_SECRET_KEY: minioadmin
-        options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live"
-          --health-interval 30s
-          --health-timeout 20s
-          --health-retries 3
         ports:
           - 9000:9000
           - 9001:9001
@@ -98,12 +88,6 @@ jobs:
         env:
           ETCD_ENDPOINTS: etcd:2379
           MINIO_ADDRESS: minio:9000
-        options: >-
-          --health-cmd "curl -f http://localhost:9091/healthz"
-          --health-interval 30s
-          --health-start-period 90s
-          --health-timeout 20s
-          --health-retries 3
         ports:
           - 19530:19530
           - 9091:9091
