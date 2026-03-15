@@ -75,6 +75,12 @@ jobs:
           ETCD_SNAPSHOT_COUNT: "50000"
         ports:
           - 2379:2379
+        options: >-
+          --health-cmd "etcdctl endpoint health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 10s
       minio:
         image: minio/minio:RELEASE.2023-03-20T20-16-18Z
         env:
@@ -83,6 +89,12 @@ jobs:
         ports:
           - 9000:9000
           - 9001:9001
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 10s
       milvus:
         image: milvusdb/milvus:v2.6.12
         env:
@@ -91,6 +103,12 @@ jobs:
         ports:
           - 19530:19530
           - 9091:9091
+        options: >-
+          --health-cmd "curl -f http://localhost:9091/healthz || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 90s
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -101,24 +119,9 @@ jobs:
         with:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
-      - name: Wait for Milvus to be ready
-        run: |
-          echo "Waiting for Milvus to be ready..."
-          for i in {1..150}; do
-            echo "Attempt $i/150: Checking Milvus at localhost:9091..."
-            if curl -sf http://localhost:9091/healthz > /dev/null 2>&1; then
-              echo "✓ Milvus is ready!"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "✗ Timeout waiting for Milvus after 5 minutes"
-          echo "Checking if port 9091 is open..."
-          netstat -tlnp | grep 9091 || ss -tlnp | grep 9091 || echo "Port not found"
-          exit 1
       - run: go mod download
       - env:
           TF_ACC: "1"
-          MILVUS_ADDRESS: "localhost:19530"
+          MILVUS_ADDRESS: "milvus:19530"
         run: make testacc
         timeout-minutes: 135
