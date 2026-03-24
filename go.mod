@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.31.0
 	github.com/hashicorp/terraform-plugin-testing v1.15.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/milvus-io/milvus/client/v2 v2.6.2
+	github.com/milvus-io/milvus/client/v2 v2.6.3
 )
 
 require (
@@ -75,7 +75,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/milvus-io/milvus-proto/go-api/v2 v2.6.8-0.20251223041313-25746c47c1a7 // indirect
+	github.com/milvus-io/milvus-proto/go-api/v2 v2.6.13 // indirect
 	github.com/milvus-io/milvus/pkg/v2 v2.6.7-0.20251201120310-af64f2acba38 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
