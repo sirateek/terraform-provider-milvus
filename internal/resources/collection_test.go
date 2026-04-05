@@ -20,6 +20,7 @@ func TestAccResourceCollection_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCollectionDestroyed(collectionName),
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
@@ -28,6 +29,58 @@ func TestAccResourceCollection_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("milvus_collection.test", "name", collectionName),
 					resource.TestCheckResourceAttr("milvus_collection.test", "description", "Test collection"),
 					resource.TestCheckResourceAttr("milvus_collection.test", "auto_id", "false"),
+					// Verify computed attributes are populated
+					resource.TestCheckResourceAttrSet("milvus_collection.test", "id"),
+					resource.TestCheckResourceAttr("milvus_collection.test", "shard_num", "1"),
+					resource.TestCheckResourceAttr("milvus_collection.test", "consistency_level", "Strong"),
+					// Verify fields
+					resource.TestCheckResourceAttr("milvus_collection.test", "fields.0.name", "id"),
+					resource.TestCheckResourceAttr("milvus_collection.test", "fields.0.data_type", "Int64"),
+					resource.TestCheckResourceAttr("milvus_collection.test", "fields.0.is_primary_key", "true"),
+					resource.TestCheckResourceAttr("milvus_collection.test", "fields.1.name", "embedding"),
+					resource.TestCheckResourceAttr("milvus_collection.test", "fields.1.data_type", "FloatVector"),
+					testAccCheckCollectionExists("milvus_collection.test"),
+				),
+			},
+			// Import state testing — import by collection name, not the numeric id
+			{
+				ResourceName:      "milvus_collection.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["milvus_collection.test"]
+					if !ok {
+						return "", fmt.Errorf("not found: milvus_collection.test")
+					}
+					return rs.Primary.Attributes["name"], nil
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceCollection_UpdateConsistencyLevel(t *testing.T) {
+	collectionName := fmt.Sprintf("tf_test_%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCollectionDestroyed(collectionName),
+		Steps: []resource.TestStep{
+			// Create with default consistency level
+			{
+				Config: testAccResourceCollectionConfig_Basic(collectionName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("milvus_collection.test", "consistency_level", "Strong"),
+				),
+			},
+			// Update to Bounded (in-place update, no replace)
+			{
+				Config: testAccResourceCollectionConfig_WithConsistencyLevel(collectionName, "Bounded"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("milvus_collection.test", "name", collectionName),
+					resource.TestCheckResourceAttr("milvus_collection.test", "consistency_level", "Bounded"),
+					testAccCheckCollectionExists("milvus_collection.test"),
 				),
 			},
 		},
@@ -176,6 +229,52 @@ resource "milvus_collection" "test" {
   ]
 }
 `, name)
+}
+
+func testAccResourceCollectionConfig_WithConsistencyLevel(name, consistencyLevel string) string {
+	return fmt.Sprintf(`
+provider "milvus" {
+  address = "localhost:19530"
+}
+
+resource "milvus_collection" "test" {
+  name              = "%s"
+  description       = "Test collection"
+  consistency_level = "%s"
+
+  fields = [
+    {
+      name           = "id"
+      data_type      = "Int64"
+      is_primary_key = true
+    },
+    {
+      name      = "embedding"
+      data_type = "FloatVector"
+      dim       = 768
+    }
+  ]
+}
+`, name, consistencyLevel)
+}
+
+// testAccCheckCollectionDestroyed verifies the collection is deleted after the test.
+func testAccCheckCollectionDestroyed(collectionName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProviderConfig.Client
+		if client == nil {
+			return fmt.Errorf("Provider not configured")
+		}
+
+		exists, err := client.HasCollection(context.Background(), milvusclient.NewHasCollectionOption(collectionName))
+		if err != nil {
+			return fmt.Errorf("Error checking collection %s: %v", collectionName, err)
+		}
+		if exists {
+			return fmt.Errorf("Collection %s still exists after destroy", collectionName)
+		}
+		return nil
+	}
 }
 
 func testAccCheckCollectionExists(resourceName string) resource.TestCheckFunc {

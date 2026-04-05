@@ -5,12 +5,14 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/milvus-io/milvus/client/v2/milvusclient"
+	"github.com/milvus-io/milvus/pkg/v2/util/merr"
 	"github.com/sirateek/terraform-provider-milvus/internal/client/milvus"
 	"github.com/sirateek/terraform-provider-milvus/internal/config"
 	testingpkg "github.com/sirateek/terraform-provider-milvus/internal/testing"
@@ -101,12 +103,10 @@ func PreCheck(t *testing.T) {
 
 	// We expect this to fail (collection doesn't exist), but it shows the connection works
 	// If it fails with connection error, we'll catch it
+
 	if connErr != nil {
 		// Check if it's a "collection not found" error, which is expected
-		errStr := connErr.Error()
-		if errStr != "collection not found" &&
-			errStr != "collection _test_connection does not exist" &&
-			!isCollectionNotFoundError(errStr) {
+		if !errors.Is(connErr, merr.ErrCollectionNotFound) {
 			// It's some other error, possibly connection-related
 			t.Fatalf("failed to connect to Milvus at %s: %s", address, connErr)
 		}
