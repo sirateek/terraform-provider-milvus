@@ -373,9 +373,6 @@ func (r *MilvusCollectionResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	r.readCollection(ctx, &state, resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	// Set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -492,6 +489,14 @@ func (r *MilvusCollectionResource) Delete(ctx context.Context, req resource.Dele
 	// Read Terraform state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if state.DeleteProtection.ValueBool() {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Collection %s is protected from deletion",
+				state.Name.ValueString()), "Cannot delete the resource that has `delete_protection` on. Please confirm your action by first updating the `delete_protection` to false first.",
+		)
 		return
 	}
 
