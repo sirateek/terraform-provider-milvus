@@ -7,7 +7,8 @@ import (
 )
 
 // fieldsListPlanModifier requires replacement when:
-//   - Any existing field is removed or a vector field is added (not supported in-place).
+//   - Milvus only support adding a new scalar field to the existing collection.
+//   - Milvus do not support adding / removing / modifying any Vector field. Doing so will result in collection recreation.
 //
 // Adding scalar fields is allowed without replacement via AddCollectionField.
 type fieldsListPlanModifier struct{}
@@ -51,7 +52,7 @@ func (m fieldsListPlanModifier) PlanModifyList(ctx context.Context, req planmodi
 
 		if _, exists := stateFieldNames[name]; !exists {
 			// New field: require replace if it is a vector type.
-			if isVectorFieldType(f.DataType.ValueString()) {
+			if isVectorFieldType(f.DataType) {
 				resp.RequiresReplace = true
 				return
 			}

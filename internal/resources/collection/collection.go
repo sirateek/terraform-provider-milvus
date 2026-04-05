@@ -792,15 +792,7 @@ func fieldObjAttrTypes() map[string]attr.Type {
 	}
 }
 
-// isVectorFieldType returns true for vector data types that cannot be added
-// to an existing collection without recreation.
-func isVectorFieldType(dataType string) bool {
-	switch dataType {
-	case "FloatVector", "BinaryVector", "Float16Vector", "BFloat16Vector", "SparseVector", "Int8Vector":
-		return true
-	}
-	return false
-}
+
 
 // addNewScalarFields calls AddCollectionField for each field present in plan
 // but absent from state. The plan modifier guarantees no vector fields reach

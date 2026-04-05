@@ -17,3 +17,30 @@ type FieldModel struct {
 	ElementType     types.String `tfsdk:"element_type"`
 	Description     types.String `tfsdk:"description"`
 }
+
+type FieldDataType types.String
+
+// Supported Vector Field Data Type
+var (
+	FloatVectorFieldDataType    = types.StringValue("FloatVector")
+	BinaryVectorFieldDataType   = types.StringValue("BinaryVector")
+	Float16VectorFieldDataType  = types.StringValue("Float16Vector")
+	BFloat16VectorFieldDataType = types.StringValue("BFloat16Vector")
+	SparseVectorFieldDataType   = types.StringValue("SparseVector")
+	Int8VectorFieldDataType     = types.StringValue("Int8Vector")
+)
+
+// isVectorFieldType returns true for vector data types that cannot be added
+// to an existing collection without recreation.
+func isVectorFieldType(dataType types.String) bool {
+	switch dataType.ValueString() {
+	case FloatVectorFieldDataType.ValueString(),
+		BinaryVectorFieldDataType.ValueString(),
+		Float16VectorFieldDataType.ValueString(),
+		BFloat16VectorFieldDataType.ValueString(),
+		SparseVectorFieldDataType.ValueString(),
+		Int8VectorFieldDataType.ValueString():
+		return true
+	}
+	return false
+}
