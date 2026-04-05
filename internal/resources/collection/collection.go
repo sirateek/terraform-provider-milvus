@@ -22,23 +22,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/milvus-io/milvus/client/v2/entity"
 	"github.com/milvus-io/milvus/client/v2/milvusclient"
+	"github.com/sirateek/terraform-provider-milvus/internal/util"
 )
-
-// CollectionFieldModel represents a single schema field in Terraform state.
-type CollectionFieldModel struct {
-	Name            types.String `tfsdk:"name"`
-	DataType        types.String `tfsdk:"data_type"`
-	IsPrimaryKey    types.Bool   `tfsdk:"is_primary_key"`
-	IsAutoID        types.Bool   `tfsdk:"is_auto_id"`
-	IsPartitionKey  types.Bool   `tfsdk:"is_partition_key"`
-	IsClusteringKey types.Bool   `tfsdk:"is_clustering_key"`
-	Nullable        types.Bool   `tfsdk:"nullable"`
-	Dim             types.Int64  `tfsdk:"dim"`
-	MaxLength       types.Int64  `tfsdk:"max_length"`
-	MaxCapacity     types.Int64  `tfsdk:"max_capacity"`
-	ElementType     types.String `tfsdk:"element_type"`
-	Description     types.String `tfsdk:"description"`
-}
 
 // MilvusCollectionResourceModel is the top-level Terraform state model.
 type MilvusCollectionResourceModel struct {
@@ -52,16 +37,6 @@ type MilvusCollectionResourceModel struct {
 	ConsistencyLevel   types.String                `tfsdk:"consistency_level"`
 	Properties         *MilvusCollectionProperties `tfsdk:"properties"`
 	Fields             types.List                  `tfsdk:"fields"`
-}
-
-type MilvusCollectionProperties struct {
-	TTLSeconds            types.Int64  `tfsdk:"collection_ttl_seconds"`
-	MMapEnabled           types.Bool   `tfsdk:"mmap_enabled"`
-	PartitionKeyIsolation types.Bool   `tfsdk:"partition_key_isolation"`
-	DynamicFieldEnabled   types.Bool   `tfsdk:"dynamic_field_enabled"`
-	AllowInsertAutoID     types.Bool   `tfsdk:"allow_insert_auto_id"`
-	AllowUpdateAutoID     types.Bool   `tfsdk:"allow_update_auto_id"`
-	Timezone              types.String `tfsdk:"timezone"`
 }
 
 // MilvusCollectionResource is the resource implementation.
@@ -279,7 +254,7 @@ func (r *MilvusCollectionResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	// Extract fields from plan
-	var fields []CollectionFieldModel
+	var fields []FieldModel
 	resp.Diagnostics.Append(plan.Fields.ElementsAs(ctx, &fields, false)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -548,7 +523,7 @@ func (r *MilvusCollectionResource) readCollection(ctx context.Context, model *Mi
 			hasValue := false
 
 			if ttl, ok := coll.Properties["collection.ttl.seconds"]; ok {
-				if ttlVal, err := toInt64(ttl); err == nil {
+				if ttlVal, err := util.ToInt64(ttl); err == nil {
 					props.TTLSeconds = types.Int64Value(ttlVal)
 					hasValue = true
 				}
@@ -589,9 +564,9 @@ func (r *MilvusCollectionResource) readCollection(ctx context.Context, model *Mi
 	}
 
 	// Build fields list
-	var fieldModels []CollectionFieldModel
+	var fieldModels []FieldModel
 	for _, field := range coll.Schema.Fields {
-		fieldModel := CollectionFieldModel{
+		fieldModel := FieldModel{
 			Name:            types.StringValue(field.Name),
 			DataType:        types.StringValue(fieldTypeToString(field.DataType)),
 			IsPrimaryKey:    types.BoolValue(field.PrimaryKey),
@@ -605,17 +580,17 @@ func (r *MilvusCollectionResource) readCollection(ctx context.Context, model *Mi
 		// Set optional integer fields
 		if field.TypeParams != nil {
 			if dim, ok := field.TypeParams["dim"]; ok {
-				if dimVal, err := toInt64(dim); err == nil {
+				if dimVal, err := util.ToInt64(dim); err == nil {
 					fieldModel.Dim = types.Int64Value(dimVal)
 				}
 			}
 			if maxLength, ok := field.TypeParams["max_length"]; ok {
-				if maxLengthVal, err := toInt64(maxLength); err == nil {
+				if maxLengthVal, err := util.ToInt64(maxLength); err == nil {
 					fieldModel.MaxLength = types.Int64Value(maxLengthVal)
 				}
 			}
 			if maxCapacity, ok := field.TypeParams["max_capacity"]; ok {
-				if maxCapacityVal, err := toInt64(maxCapacity); err == nil {
+				if maxCapacityVal, err := util.ToInt64(maxCapacity); err == nil {
 					fieldModel.MaxCapacity = types.Int64Value(maxCapacityVal)
 				}
 			}
@@ -639,7 +614,7 @@ func (r *MilvusCollectionResource) readCollection(ctx context.Context, model *Mi
 }
 
 // toEntitySchema converts Terraform plan to entity.Schema.
-func toEntitySchema(_ context.Context, plan MilvusCollectionResourceModel, fields []CollectionFieldModel) *entity.Schema {
+func toEntitySchema(_ context.Context, plan MilvusCollectionResourceModel, fields []FieldModel) *entity.Schema {
 	collSchema := &entity.Schema{
 		CollectionName:     plan.Name.ValueString(),
 		Description:        plan.Description.ValueString(),
@@ -658,8 +633,8 @@ func toEntitySchema(_ context.Context, plan MilvusCollectionResourceModel, field
 	return collSchema
 }
 
-// toEntityField converts a CollectionFieldModel to entity.Field.
-func toEntityField(f CollectionFieldModel) *entity.Field {
+// toEntityField converts a FieldModel to entity.Field.
+func toEntityField(f FieldModel) *entity.Field {
 	field := &entity.Field{
 		Name:        f.Name.ValueString(),
 		DataType:    fieldTypeFromString(f.DataType.ValueString()),
@@ -799,7 +774,7 @@ func consistencyLevelToString(cl entity.ConsistencyLevel) string {
 	}
 }
 
-// fieldObjAttrTypes returns the attribute type map for CollectionFieldModel.
+// fieldObjAttrTypes returns the attribute type map for FieldModel.
 func fieldObjAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"name":              types.StringType,
@@ -814,24 +789,6 @@ func fieldObjAttrTypes() map[string]attr.Type {
 		"max_capacity":      types.Int64Type,
 		"element_type":      types.StringType,
 		"description":       types.StringType,
-	}
-}
-
-// toInt64 is a helper to convert any to int64.
-func toInt64(v any) (int64, error) {
-	switch val := v.(type) {
-	case int64:
-		return val, nil
-	case int:
-		return int64(val), nil
-	case int32:
-		return int64(val), nil
-	case string:
-		var i int64
-		_, err := fmt.Sscanf(val, "%d", &i)
-		return i, err
-	default:
-		return 0, fmt.Errorf("cannot convert %v to int64", v)
 	}
 }
 
@@ -851,7 +808,7 @@ func isVectorFieldType(dataType string) bool {
 func (r *MilvusCollectionResource) addNewScalarFields(ctx context.Context, plan, state MilvusCollectionResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	var planFields, stateFields []CollectionFieldModel
+	var planFields, stateFields []FieldModel
 	diags.Append(plan.Fields.ElementsAs(ctx, &planFields, false)...)
 	diags.Append(state.Fields.ElementsAs(ctx, &stateFields, false)...)
 	if diags.HasError() {
@@ -879,65 +836,4 @@ func (r *MilvusCollectionResource) addNewScalarFields(ctx context.Context, plan,
 	}
 
 	return diags
-}
-
-// fieldsListPlanModifier requires replacement when:
-//   - Any existing field is removed or a vector field is added (not supported in-place).
-//
-// Adding scalar fields is allowed without replacement via AddCollectionField.
-type fieldsListPlanModifier struct{}
-
-func (m fieldsListPlanModifier) Description(_ context.Context) string {
-	return "Requires replacement if a vector field is added or any existing field is removed/modified."
-}
-
-func (m fieldsListPlanModifier) MarkdownDescription(ctx context.Context) string {
-	return m.Description(ctx)
-}
-
-func (m fieldsListPlanModifier) PlanModifyList(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
-	// No state yet (create) or plan is unknown — nothing to do.
-	if req.StateValue.IsNull() || req.StateValue.IsUnknown() {
-		return
-	}
-	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() {
-		return
-	}
-	if req.StateValue.Equal(req.PlanValue) {
-		return
-	}
-
-	var stateFields, planFields []CollectionFieldModel
-	resp.Diagnostics.Append(req.StateValue.ElementsAs(ctx, &stateFields, false)...)
-	resp.Diagnostics.Append(req.PlanValue.ElementsAs(ctx, &planFields, false)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	stateFieldNames := make(map[string]struct{}, len(stateFields))
-	for _, f := range stateFields {
-		stateFieldNames[f.Name.ValueString()] = struct{}{}
-	}
-
-	planFieldNames := make(map[string]struct{}, len(planFields))
-	for _, f := range planFields {
-		name := f.Name.ValueString()
-		planFieldNames[name] = struct{}{}
-
-		if _, exists := stateFieldNames[name]; !exists {
-			// New field: require replace if it is a vector type.
-			if isVectorFieldType(f.DataType.ValueString()) {
-				resp.RequiresReplace = true
-				return
-			}
-		}
-	}
-
-	// Require replace if any existing field was removed.
-	for name := range stateFieldNames {
-		if _, exists := planFieldNames[name]; !exists {
-			resp.RequiresReplace = true
-			return
-		}
-	}
 }
