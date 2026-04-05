@@ -1,7 +1,7 @@
 // Copyright Siratee K. 2026
 // SPDX-License-Identifier: MIT
 
-package resources
+package collection
 
 import (
 	"context"
@@ -12,14 +12,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/milvus-io/milvus/client/v2/milvusclient"
+	"github.com/sirateek/terraform-provider-milvus/internal/resources"
 )
 
 func TestAccResourceCollection_Basic(t *testing.T) {
 	collectionName := fmt.Sprintf("tf_test_%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { resources.testAccPreCheck(t) },
+		ProtoV6ProviderFactories: resources.testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckCollectionDestroyed(collectionName),
 		Steps: []resource.TestStep{
 			// Create and Read testing
@@ -63,8 +64,8 @@ func TestAccResourceCollection_UpdateConsistencyLevel(t *testing.T) {
 	collectionName := fmt.Sprintf("tf_test_%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { resources.testAccPreCheck(t) },
+		ProtoV6ProviderFactories: resources.testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckCollectionDestroyed(collectionName),
 		Steps: []resource.TestStep{
 			// Create with default consistency level
@@ -91,8 +92,8 @@ func TestAccResourceCollection_WithProperties(t *testing.T) {
 	collectionName := fmt.Sprintf("tf_test_%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { resources.testAccPreCheck(t) },
+		ProtoV6ProviderFactories: resources.testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create with properties
 			{
@@ -111,8 +112,8 @@ func TestAccResourceCollection_MultipleFields(t *testing.T) {
 	collectionName := fmt.Sprintf("tf_test_%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { resources.testAccPreCheck(t) },
+		ProtoV6ProviderFactories: resources.testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceCollectionConfig_MultipleFields(collectionName),
@@ -261,7 +262,7 @@ resource "milvus_collection" "test" {
 // testAccCheckCollectionDestroyed verifies the collection is deleted after the test.
 func testAccCheckCollectionDestroyed(collectionName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProviderConfig.Client
+		client := resources.testAccProviderConfig.Client
 		if client == nil {
 			return fmt.Errorf("Provider not configured")
 		}
@@ -289,7 +290,7 @@ func testAccCheckCollectionExists(resourceName string) resource.TestCheckFunc {
 		}
 
 		// Get the provider configured client
-		client := testAccProviderConfig.Client
+		client := resources.testAccProviderConfig.Client
 		if client == nil {
 			return fmt.Errorf("Provider not configured")
 		}

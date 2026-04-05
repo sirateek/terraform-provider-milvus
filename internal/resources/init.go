@@ -5,10 +5,11 @@ package resources
 
 import (
 	"github.com/sirateek/terraform-provider-milvus/internal/provider"
+	"github.com/sirateek/terraform-provider-milvus/internal/resources/collection"
 )
 
 func init() {
 	// Register resources with the provider
-	provider.RegisterResource(NewMilvusCollectionResource)
+	provider.RegisterResource(collection.NewMilvusCollectionResource)
 	provider.RegisterResource(NewMilvusIndexResource)
 }
