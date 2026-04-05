@@ -117,27 +117,3 @@ func PreCheck(t *testing.T) {
 		Client: client,
 	}
 }
-
-// isCollectionNotFoundError checks if the error message indicates a collection not found error.
-func isCollectionNotFoundError(errStr string) bool {
-	// Check for common Milvus error messages
-	if len(errStr) == 0 {
-		return false
-	}
-	return contains(errStr, "not found") ||
-		contains(errStr, "does not exist") ||
-		contains(errStr, "CollectionNotExist")
-}
-
-// contains checks if a string contains a substring.
-func contains(str, substr string) bool {
-	if len(str) == 0 || len(substr) == 0 {
-		return false
-	}
-	for i := 0; i <= len(str)-len(substr); i++ {
-		if str[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}

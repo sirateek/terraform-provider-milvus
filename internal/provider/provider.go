@@ -14,17 +14,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/sirateek/terraform-provider-milvus/internal/client/milvus"
 	config2 "github.com/sirateek/terraform-provider-milvus/internal/config"
+	"github.com/sirateek/terraform-provider-milvus/internal/resources/collection"
+	"github.com/sirateek/terraform-provider-milvus/internal/resources/index"
 )
 
-// Blank import of resources to trigger resource registration during init()
-// This must happen before the provider is used, but doesn't require
-// a direct import at the package level.
-var _ struct{} = struct{}{} // dummy statement
-
 func init() {
-	// Trigger resources package initialization to register its resources
-	// This is done indirectly through a side-effect import
-	// We use an underscore import in the resources package itself
+	RegisterResource(collection.NewMilvusCollectionResource)
+	RegisterResource(index.NewMilvusIndexResource)
 }
 
 // Ensure MilvusProvider satisfies various provider interfaces.
