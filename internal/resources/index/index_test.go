@@ -1,7 +1,7 @@
 // Copyright Siratee K. 2026
 // SPDX-License-Identifier: MIT
 
-package resources
+package index
 
 import (
 	"context"
@@ -12,14 +12,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/milvus-io/milvus/client/v2/milvusclient"
+	"github.com/sirateek/terraform-provider-milvus/internal/resources"
 )
 
 func TestAccResourceIndex_VectorFlat(t *testing.T) {
 	collectionName := fmt.Sprintf("tf_test_%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { resources.testAccPreCheck(t) },
+		ProtoV6ProviderFactories: resources.testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexConfig_VectorFlat(collectionName),
@@ -39,8 +40,8 @@ func TestAccResourceIndex_VectorHnsw(t *testing.T) {
 	collectionName := fmt.Sprintf("tf_test_%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { resources.testAccPreCheck(t) },
+		ProtoV6ProviderFactories: resources.testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexConfig_VectorHnsw(collectionName),
@@ -58,8 +59,8 @@ func TestAccResourceIndex_ScalarBitmap(t *testing.T) {
 	collectionName := fmt.Sprintf("tf_test_%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { resources.testAccPreCheck(t) },
+		ProtoV6ProviderFactories: resources.testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexConfig_ScalarBitmap(collectionName),
@@ -77,8 +78,8 @@ func TestAccResourceIndex_IvfFlat(t *testing.T) {
 	collectionName := fmt.Sprintf("tf_test_%s", acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		PreCheck:                 func() { resources.testAccPreCheck(t) },
+		ProtoV6ProviderFactories: resources.testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceIndexConfig_IvfFlat(collectionName),
@@ -250,7 +251,7 @@ func testAccCheckIndexExists(resourceName string) resource.TestCheckFunc {
 		}
 
 		// Get the provider configured client
-		client := testAccProviderConfig.Client
+		client := resources.testAccProviderConfig.Client
 		if client == nil {
 			return fmt.Errorf("Provider not configured")
 		}
