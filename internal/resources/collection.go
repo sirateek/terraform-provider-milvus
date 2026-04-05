@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -244,7 +243,7 @@ func (r *MilvusCollectionResource) Schema(_ context.Context, _ resource.SchemaRe
 					},
 				},
 				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
+					fieldsListPlanModifier{},
 				},
 			},
 		},
@@ -389,8 +388,11 @@ func (r *MilvusCollectionResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
-	// Only consistency_level and properties can be updated
-	// Other fields have RequiresReplace, so if they changed, Terraform would replace the resource
+	// Add new scalar fields if any were added to the plan
+	resp.Diagnostics.Append(r.addNewScalarFields(ctx, plan, state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Update properties if changed
 	changedProps := make(map[string]any)
@@ -830,5 +832,112 @@ func toInt64(v any) (int64, error) {
 		return i, err
 	default:
 		return 0, fmt.Errorf("cannot convert %v to int64", v)
+	}
+}
+
+// isVectorFieldType returns true for vector data types that cannot be added
+// to an existing collection without recreation.
+func isVectorFieldType(dataType string) bool {
+	switch dataType {
+	case "FloatVector", "BinaryVector", "Float16Vector", "BFloat16Vector", "SparseVector", "Int8Vector":
+		return true
+	}
+	return false
+}
+
+// addNewScalarFields calls AddCollectionField for each field present in plan
+// but absent from state. The plan modifier guarantees no vector fields reach
+// this path — those are handled by RequiresReplace.
+func (r *MilvusCollectionResource) addNewScalarFields(ctx context.Context, plan, state MilvusCollectionResourceModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	var planFields, stateFields []CollectionFieldModel
+	diags.Append(plan.Fields.ElementsAs(ctx, &planFields, false)...)
+	diags.Append(state.Fields.ElementsAs(ctx, &stateFields, false)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	stateFieldNames := make(map[string]struct{}, len(stateFields))
+	for _, f := range stateFields {
+		stateFieldNames[f.Name.ValueString()] = struct{}{}
+	}
+
+	for _, f := range planFields {
+		if _, exists := stateFieldNames[f.Name.ValueString()]; exists {
+			continue
+		}
+		field := toEntityField(f)
+		opt := milvusclient.NewAddCollectionFieldOption(plan.Name.ValueString(), field)
+		if err := r.client.AddCollectionField(ctx, opt); err != nil {
+			diags.AddError(
+				"Error adding field to collection",
+				fmt.Sprintf("Could not add field %q to collection %s: %s", f.Name.ValueString(), plan.Name.ValueString(), err.Error()),
+			)
+			return diags
+		}
+	}
+
+	return diags
+}
+
+// fieldsListPlanModifier requires replacement when:
+//   - Any existing field is removed or a vector field is added (not supported in-place).
+//
+// Adding scalar fields is allowed without replacement via AddCollectionField.
+type fieldsListPlanModifier struct{}
+
+func (m fieldsListPlanModifier) Description(_ context.Context) string {
+	return "Requires replacement if a vector field is added or any existing field is removed/modified."
+}
+
+func (m fieldsListPlanModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m fieldsListPlanModifier) PlanModifyList(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+	// No state yet (create) or plan is unknown — nothing to do.
+	if req.StateValue.IsNull() || req.StateValue.IsUnknown() {
+		return
+	}
+	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() {
+		return
+	}
+	if req.StateValue.Equal(req.PlanValue) {
+		return
+	}
+
+	var stateFields, planFields []CollectionFieldModel
+	resp.Diagnostics.Append(req.StateValue.ElementsAs(ctx, &stateFields, false)...)
+	resp.Diagnostics.Append(req.PlanValue.ElementsAs(ctx, &planFields, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	stateFieldNames := make(map[string]struct{}, len(stateFields))
+	for _, f := range stateFields {
+		stateFieldNames[f.Name.ValueString()] = struct{}{}
+	}
+
+	planFieldNames := make(map[string]struct{}, len(planFields))
+	for _, f := range planFields {
+		name := f.Name.ValueString()
+		planFieldNames[name] = struct{}{}
+
+		if _, exists := stateFieldNames[name]; !exists {
+			// New field: require replace if it is a vector type.
+			if isVectorFieldType(f.DataType.ValueString()) {
+				resp.RequiresReplace = true
+				return
+			}
+		}
+	}
+
+	// Require replace if any existing field was removed.
+	for name := range stateFieldNames {
+		if _, exists := planFieldNames[name]; !exists {
+			resp.RequiresReplace = true
+			return
+		}
 	}
 }
