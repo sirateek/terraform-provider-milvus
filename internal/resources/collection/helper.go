@@ -142,9 +142,17 @@ func fieldObjAttrTypes() map[string]attr.Type {
 func compareTerraformCollectionPropertyPlanAndState(plan, state *model.MilvusCollectionProperties) *model.MilvusCollectionProperties {
 	var result model.MilvusCollectionProperties
 
-	planVal := reflect.ValueOf(plan)
-	stateVal := reflect.ValueOf(state)
+	// Dereference pointers — reflect.Value.NumField panics on a ptr Value.
+	planVal := reflect.ValueOf(plan).Elem()
 	resultVal := reflect.ValueOf(&result).Elem()
+
+	// When state had no properties block, treat every plan field as changed.
+	if state == nil {
+		resultVal.Set(planVal)
+		return &result
+	}
+
+	stateVal := reflect.ValueOf(state).Elem()
 
 	for i := range planVal.NumField() {
 		planAttr, ok := planVal.Field(i).Interface().(attr.Value)

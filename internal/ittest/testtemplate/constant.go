@@ -14,6 +14,35 @@ resource "milvus_collection" "{{ .TerraformResourceName }}" {
   auto_id           = {{ .AutoID }}
   delete_protection = {{ .DeleteProtection }}
   shard_num         = {{ .ShardNum }}
+  {{- if .ConsistencyLevel }}
+  consistency_level = "{{ deref .ConsistencyLevel }}"
+  {{- end }}
+  {{- if .Properties }}
+
+  properties = {
+    {{- if .Properties.TTLSeconds }}
+    collection_ttl_seconds = {{ deref .Properties.TTLSeconds }}
+    {{- end }}
+    {{- if .Properties.MmapEnabled }}
+    mmap_enabled = {{ deref .Properties.MmapEnabled }}
+    {{- end }}
+    {{- if .Properties.PartitionKeyIsolation }}
+    partition_key_isolation = {{ deref .Properties.PartitionKeyIsolation }}
+    {{- end }}
+    {{- if .Properties.DynamicFieldEnabled }}
+    dynamic_field_enabled = {{ deref .Properties.DynamicFieldEnabled }}
+    {{- end }}
+    {{- if .Properties.AllowInsertAutoID }}
+    allow_insert_auto_id = {{ deref .Properties.AllowInsertAutoID }}
+    {{- end }}
+    {{- if .Properties.AllowUpdateAutoID }}
+    allow_update_auto_id = {{ deref .Properties.AllowUpdateAutoID }}
+    {{- end }}
+    {{- if .Properties.Timezone }}
+    timezone = "{{ deref .Properties.Timezone }}"
+    {{- end }}
+  }
+  {{- end }}
 
   fields = [
     {{- range $i, $f := .Fields }}

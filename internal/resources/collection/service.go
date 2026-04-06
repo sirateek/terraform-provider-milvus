@@ -77,6 +77,17 @@ func (r *MilvusCollectionResource) readCollection(ctx context.Context, in *model
 
 	// Update computed fields from the collection
 	in.Description = types.StringValue(coll.Schema.Description)
+	in.AutoID = types.BoolValue(coll.Schema.AutoID)
+	in.EnableDynamicField = types.BoolValue(coll.Schema.EnableDynamicField)
+
+	// delete_protection is provider-only and has no Milvus counterpart.
+	// During import, the state has null here. Default it to false so that the
+	// post-import plan produces no diff when the config also omits or sets false.
+	// For normal reads the value is already populated from state, so IsNull()
+	// is false and we leave it unchanged.
+	if in.DeleteProtection.IsNull() {
+		in.DeleteProtection = types.BoolValue(false)
+	}
 
 	// Map consistency level
 	in.ConsistencyLevel = types.StringValue(consistencyLevelToString(coll.ConsistencyLevel))
