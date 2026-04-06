@@ -371,6 +371,21 @@ func (r *MilvusCollectionResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
+	// Update consistency_level if changed. Milvus accepts it as a property with
+	// the integer enum value (Strong=0, Session=1, Bounded=2, Eventually=3).
+	if planData.ConsistencyLevel.ValueString() != stateData.ConsistencyLevel.ValueString() {
+		cl := consistencyLevelFromString(planData.ConsistencyLevel.ValueString())
+		opt := milvusclient.NewAlterCollectionPropertiesOption(planData.Name.ValueString()).
+			WithProperty("consistency_level", int(cl))
+		if err := r.client.AlterCollectionProperties(ctx, opt); err != nil {
+			resp.Diagnostics.AddError(
+				"Error updating collection consistency level",
+				fmt.Sprintf("Could not update consistency_level for collection %s: %s", planData.Name.ValueString(), err.Error()),
+			)
+			return
+		}
+	}
+
 	// Update properties if changed
 	changedProps := make(map[string]any)
 	if planData.Properties != nil || stateData.Properties != nil {

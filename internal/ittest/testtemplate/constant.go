@@ -14,6 +14,9 @@ resource "milvus_collection" "{{ .TerraformResourceName }}" {
   auto_id           = {{ .AutoID }}
   delete_protection = {{ .DeleteProtection }}
   shard_num         = {{ .ShardNum }}
+  {{- if .ConsistencyLevel }}
+  consistency_level = "{{ deref .ConsistencyLevel }}"
+  {{- end }}
 
   fields = [
     {{- range $i, $f := .Fields }}

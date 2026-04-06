@@ -39,6 +39,7 @@ type CollectionTemplate struct {
 	AutoID                bool
 	DeleteProtection      bool
 	ShardNum              int
+	ConsistencyLevel      *string
 	Fields                []FieldTemplate
 }
 
