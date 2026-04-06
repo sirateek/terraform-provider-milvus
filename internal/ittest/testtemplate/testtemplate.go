@@ -13,6 +13,13 @@ type TerraformTemplate struct {
 	MilvusAddress string
 	Collections   []CollectionTemplate
 	Indexes       []IndexTemplate
+	Aliases       []AliasTemplate
+}
+
+type AliasTemplate struct {
+	TerraformResourceName string
+	AliasName             string
+	CollectionName        string
 }
 
 type IndexTemplate struct {

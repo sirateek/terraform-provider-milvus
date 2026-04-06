@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/sirateek/terraform-provider-milvus/internal/client/milvus"
 	config2 "github.com/sirateek/terraform-provider-milvus/internal/config"
+	"github.com/sirateek/terraform-provider-milvus/internal/resources/alias"
 	"github.com/sirateek/terraform-provider-milvus/internal/resources/collection"
 	"github.com/sirateek/terraform-provider-milvus/internal/resources/index"
 )
@@ -21,6 +22,7 @@ import (
 func init() {
 	RegisterResource(collection.NewMilvusCollectionResource)
 	RegisterResource(index.NewMilvusIndexResource)
+	RegisterResource(alias.NewMilvusAliasResource)
 }
 
 // Ensure MilvusProvider satisfies various provider interfaces.
