@@ -93,4 +93,4 @@ jobs:
           TF_ACC: "1"
           MILVUS_ADDRESS: "milvus:19530"
         run: make testacc
-        timeout-minutes: 135
+        timeout-minutes: 15

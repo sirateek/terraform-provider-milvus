@@ -88,12 +88,15 @@ func PreCheck(t *testing.T) {
 		EnableTLS: &enableTLS,
 	}
 
+	t.Logf("Connecting to Milvus at %s", address)
 	client, diag := milvus.ProvideMilvusClient(milvusConfig)
 	if diag != nil {
+		t.Logf("diag: %s", diag.Summary())
 		t.Fatalf("failed to create Milvus client: %s", diag.Summary())
 	}
 
 	// Test the connection
+	t.Logf("Testing Connection")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

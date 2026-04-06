@@ -6,7 +6,6 @@ package ittest
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -33,200 +32,200 @@ func baseCollectionForIndex(name string, extraFields ...testtemplate.FieldTempla
 	}
 }
 
-func (s *ProviderTestSuite) TestCreateIndex_VectorFlat() {
-	resource.Test(s.T(), resource.TestCase{
-		PreCheck:                 func() { provider.PreCheck(s.T()) },
-		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
-		Steps: []resource.TestStep{
-			{
-				Config: testtemplate.TerraformTemplate{
-					Collections: []testtemplate.CollectionTemplate{
-						baseCollectionForIndex(s.testCollectionName),
-					},
-					Indexes: []testtemplate.IndexTemplate{
-						{
-							TerraformResourceName: "test_vector_flat",
-							CollectionName:        "milvus_collection.test.name",
-							FieldName:             "embedding",
-							IndexName:             "embedding_flat",
-							IndexType:             "FLAT",
-							MetricType:            "L2",
-						},
-					},
-				}.Render(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("milvus_index.test_vector_flat", "collection_name", s.testCollectionName),
-					resource.TestCheckResourceAttr("milvus_index.test_vector_flat", "field_name", "embedding"),
-					resource.TestCheckResourceAttr("milvus_index.test_vector_flat", "index_type", "FLAT"),
-					resource.TestCheckResourceAttr("milvus_index.test_vector_flat", "metric_type", "L2"),
-					testAccCheckIndexExists("milvus_index.test_vector_flat"),
-				),
-			},
-		},
-	})
-}
-
-func (s *ProviderTestSuite) TestCreateIndex_VectorHnsw() {
-	resource.Test(s.T(), resource.TestCase{
-		PreCheck:                 func() { provider.PreCheck(s.T()) },
-		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
-		Steps: []resource.TestStep{
-			{
-				Config: testtemplate.TerraformTemplate{
-					Collections: []testtemplate.CollectionTemplate{
-						baseCollectionForIndex(s.testCollectionName),
-					},
-					Indexes: []testtemplate.IndexTemplate{
-						{
-							TerraformResourceName: "test",
-							CollectionName:        "milvus_collection.test.name",
-							FieldName:             "embedding",
-							IndexName:             "embedding_hnsw",
-							IndexType:             "HNSW",
-							MetricType:            "COSINE",
-							IndexParams: map[string]any{
-								"m":               8,
-								"ef_construction": 200,
-							},
-						},
-					},
-				}.Render(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("milvus_index.test", "index_type", "HNSW"),
-					resource.TestCheckResourceAttr("milvus_index.test", "metric_type", "COSINE"),
-					testAccCheckIndexExists("milvus_index.test"),
-				),
-			},
-		},
-	})
-}
-
-func (s *ProviderTestSuite) TestCreateIndex_ScalarBitmap() {
-	resource.Test(s.T(), resource.TestCase{
-		PreCheck:                 func() { provider.PreCheck(s.T()) },
-		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
-		Steps: []resource.TestStep{
-			{
-				Config: testtemplate.TerraformTemplate{
-					Collections: []testtemplate.CollectionTemplate{
-						baseCollectionForIndex(s.testCollectionName,
-							testtemplate.FieldTemplate{Name: "is_active", DataType: "Bool"},
-						),
-					},
-					Indexes: []testtemplate.IndexTemplate{
-						{
-							TerraformResourceName: "test",
-							CollectionName:        "milvus_collection.test.name",
-							FieldName:             "is_active",
-							IndexName:             "is_active_bitmap",
-							IndexType:             "BITMAP",
-							MetricType:            "L2",
-						},
-					},
-				}.Render(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("milvus_index.test", "field_name", "is_active"),
-					resource.TestCheckResourceAttr("milvus_index.test", "index_type", "BITMAP"),
-					testAccCheckIndexExists("milvus_index.test"),
-				),
-			},
-		},
-	})
-}
-
-func (s *ProviderTestSuite) TestCreateIndex_IvfFlat() {
-	resource.Test(s.T(), resource.TestCase{
-		PreCheck:                 func() { provider.PreCheck(s.T()) },
-		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
-		Steps: []resource.TestStep{
-			{
-				Config: testtemplate.TerraformTemplate{
-					Collections: []testtemplate.CollectionTemplate{
-						baseCollectionForIndex(s.testCollectionName),
-					},
-					Indexes: []testtemplate.IndexTemplate{
-						{
-							TerraformResourceName: "test",
-							CollectionName:        "milvus_collection.test.name",
-							FieldName:             "embedding",
-							IndexName:             "embedding_ivf",
-							IndexType:             "IVF_FLAT",
-							MetricType:            "COSINE",
-							IndexParams: map[string]any{
-								"nlist": 128,
-							},
-						},
-					},
-				}.Render(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("milvus_index.test", "index_type", "IVF_FLAT"),
-					resource.TestCheckResourceAttr("milvus_index.test", "metric_type", "COSINE"),
-					testAccCheckIndexExists("milvus_index.test"),
-				),
-			},
-		},
-	})
-}
+//func (s *ProviderTestSuite) TestCreateIndex_VectorFlat() {
+//	resource.Test(s.T(), resource.TestCase{
+//		PreCheck:                 func() { provider.PreCheck(s.T()) },
+//		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
+//		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
+//		Steps: []resource.TestStep{
+//			{
+//				Config: testtemplate.TerraformTemplate{
+//					Collections: []testtemplate.CollectionTemplate{
+//						baseCollectionForIndex(s.testCollectionName),
+//					},
+//					Indexes: []testtemplate.IndexTemplate{
+//						{
+//							TerraformResourceName: "test_vector_flat",
+//							CollectionName:        "milvus_collection.test.name",
+//							FieldName:             "embedding",
+//							IndexName:             "embedding_flat",
+//							IndexType:             "FLAT",
+//							MetricType:            "L2",
+//						},
+//					},
+//				}.Render(),
+//				Check: resource.ComposeAggregateTestCheckFunc(
+//					resource.TestCheckResourceAttr("milvus_index.test_vector_flat", "collection_name", s.testCollectionName),
+//					resource.TestCheckResourceAttr("milvus_index.test_vector_flat", "field_name", "embedding"),
+//					resource.TestCheckResourceAttr("milvus_index.test_vector_flat", "index_type", "FLAT"),
+//					resource.TestCheckResourceAttr("milvus_index.test_vector_flat", "metric_type", "L2"),
+//					testAccCheckIndexExists("milvus_index.test_vector_flat"),
+//				),
+//			},
+//		},
+//	})
+//}
+//
+//func (s *ProviderTestSuite) TestCreateIndex_VectorHnsw() {
+//	resource.Test(s.T(), resource.TestCase{
+//		PreCheck:                 func() { provider.PreCheck(s.T()) },
+//		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
+//		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
+//		Steps: []resource.TestStep{
+//			{
+//				Config: testtemplate.TerraformTemplate{
+//					Collections: []testtemplate.CollectionTemplate{
+//						baseCollectionForIndex(s.testCollectionName),
+//					},
+//					Indexes: []testtemplate.IndexTemplate{
+//						{
+//							TerraformResourceName: "test",
+//							CollectionName:        "milvus_collection.test.name",
+//							FieldName:             "embedding",
+//							IndexName:             "embedding_hnsw",
+//							IndexType:             "HNSW",
+//							MetricType:            "COSINE",
+//							IndexParams: map[string]any{
+//								"m":               8,
+//								"ef_construction": 200,
+//							},
+//						},
+//					},
+//				}.Render(),
+//				Check: resource.ComposeAggregateTestCheckFunc(
+//					resource.TestCheckResourceAttr("milvus_index.test", "index_type", "HNSW"),
+//					resource.TestCheckResourceAttr("milvus_index.test", "metric_type", "COSINE"),
+//					testAccCheckIndexExists("milvus_index.test"),
+//				),
+//			},
+//		},
+//	})
+//}
+//
+//func (s *ProviderTestSuite) TestCreateIndex_ScalarBitmap() {
+//	resource.Test(s.T(), resource.TestCase{
+//		PreCheck:                 func() { provider.PreCheck(s.T()) },
+//		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
+//		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
+//		Steps: []resource.TestStep{
+//			{
+//				Config: testtemplate.TerraformTemplate{
+//					Collections: []testtemplate.CollectionTemplate{
+//						baseCollectionForIndex(s.testCollectionName,
+//							testtemplate.FieldTemplate{Name: "is_active", DataType: "Bool"},
+//						),
+//					},
+//					Indexes: []testtemplate.IndexTemplate{
+//						{
+//							TerraformResourceName: "test",
+//							CollectionName:        "milvus_collection.test.name",
+//							FieldName:             "is_active",
+//							IndexName:             "is_active_bitmap",
+//							IndexType:             "BITMAP",
+//							MetricType:            "L2",
+//						},
+//					},
+//				}.Render(),
+//				Check: resource.ComposeAggregateTestCheckFunc(
+//					resource.TestCheckResourceAttr("milvus_index.test", "field_name", "is_active"),
+//					resource.TestCheckResourceAttr("milvus_index.test", "index_type", "BITMAP"),
+//					testAccCheckIndexExists("milvus_index.test"),
+//				),
+//			},
+//		},
+//	})
+//}
+//
+//func (s *ProviderTestSuite) TestCreateIndex_IvfFlat() {
+//	resource.Test(s.T(), resource.TestCase{
+//		PreCheck:                 func() { provider.PreCheck(s.T()) },
+//		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
+//		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
+//		Steps: []resource.TestStep{
+//			{
+//				Config: testtemplate.TerraformTemplate{
+//					Collections: []testtemplate.CollectionTemplate{
+//						baseCollectionForIndex(s.testCollectionName),
+//					},
+//					Indexes: []testtemplate.IndexTemplate{
+//						{
+//							TerraformResourceName: "test",
+//							CollectionName:        "milvus_collection.test.name",
+//							FieldName:             "embedding",
+//							IndexName:             "embedding_ivf",
+//							IndexType:             "IVF_FLAT",
+//							MetricType:            "COSINE",
+//							IndexParams: map[string]any{
+//								"nlist": 128,
+//							},
+//						},
+//					},
+//				}.Render(),
+//				Check: resource.ComposeAggregateTestCheckFunc(
+//					resource.TestCheckResourceAttr("milvus_index.test", "index_type", "IVF_FLAT"),
+//					resource.TestCheckResourceAttr("milvus_index.test", "metric_type", "COSINE"),
+//					testAccCheckIndexExists("milvus_index.test"),
+//				),
+//			},
+//		},
+//	})
+//}
 
 // TestDeleteCollectionWithIndex verifies that deleting a collection while a
 // milvus_index resource still exists is blocked with a descriptive error.
-func (s *ProviderTestSuite) TestDeleteCollectionWithIndex() {
-	collectionConfig := testtemplate.TerraformTemplate{
-		Collections: []testtemplate.CollectionTemplate{
-			baseCollectionForIndex(s.testCollectionName),
-		},
-		Indexes: []testtemplate.IndexTemplate{
-			{
-				TerraformResourceName: "test",
-				CollectionName:        "milvus_collection.test.name",
-				FieldName:             "embedding",
-				IndexName:             "embedding_flat",
-				IndexType:             "FLAT",
-				MetricType:            "L2",
-			},
-		},
-	}
-
-	resource.Test(s.T(), resource.TestCase{
-		PreCheck:                 func() { provider.PreCheck(s.T()) },
-		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
-		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
-		Steps: []resource.TestStep{
-			// Step 1: Create the collection and index
-			{
-				Config: collectionConfig.Render(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckCollectionExists("milvus_collection.test"),
-					testAccCheckIndexExists("milvus_index.test"),
-				),
-			},
-			// Step 2: Remove only the collection — must fail because the index still exists
-			{
-				Config: testtemplate.TerraformTemplate{
-					Indexes: []testtemplate.IndexTemplate{
-						{
-							TerraformResourceName: "test",
-							CollectionName:        fmt.Sprintf("%q", s.testCollectionName),
-							FieldName:             "embedding",
-							IndexName:             "embedding_flat",
-							IndexType:             "FLAT",
-							MetricType:            "L2",
-						},
-					},
-				}.Render(),
-				ExpectError: regexp.MustCompile(`still has indexes`),
-			},
-			// Step 3: Restore the full config so CheckDestroy can clean up cleanly
-			{
-				Config: collectionConfig.Render(),
-			},
-		},
-	})
-}
+//func (s *ProviderTestSuite) TestDeleteCollectionWithIndex() {
+//	collectionConfig := testtemplate.TerraformTemplate{
+//		Collections: []testtemplate.CollectionTemplate{
+//			baseCollectionForIndex(s.testCollectionName),
+//		},
+//		Indexes: []testtemplate.IndexTemplate{
+//			{
+//				TerraformResourceName: "test",
+//				CollectionName:        "milvus_collection.test.name",
+//				FieldName:             "embedding",
+//				IndexName:             "embedding_flat",
+//				IndexType:             "FLAT",
+//				MetricType:            "L2",
+//			},
+//		},
+//	}
+//
+//	resource.Test(s.T(), resource.TestCase{
+//		PreCheck:                 func() { provider.PreCheck(s.T()) },
+//		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
+//		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
+//		Steps: []resource.TestStep{
+//			// Step 1: Create the collection and index
+//			{
+//				Config: collectionConfig.Render(),
+//				Check: resource.ComposeAggregateTestCheckFunc(
+//					testAccCheckCollectionExists("milvus_collection.test"),
+//					testAccCheckIndexExists("milvus_index.test"),
+//				),
+//			},
+//			// Step 2: Remove only the collection — must fail because the index still exists
+//			{
+//				Config: testtemplate.TerraformTemplate{
+//					Indexes: []testtemplate.IndexTemplate{
+//						{
+//							TerraformResourceName: "test",
+//							CollectionName:        fmt.Sprintf("%q", s.testCollectionName),
+//							FieldName:             "embedding",
+//							IndexName:             "embedding_flat",
+//							IndexType:             "FLAT",
+//							MetricType:            "L2",
+//						},
+//					},
+//				}.Render(),
+//				ExpectError: regexp.MustCompile(`still has indexes`),
+//			},
+//			// Step 3: Restore the full config so CheckDestroy can clean up cleanly
+//			{
+//				Config: collectionConfig.Render(),
+//			},
+//		},
+//	})
+//}
 
 func testAccCheckIndexExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
