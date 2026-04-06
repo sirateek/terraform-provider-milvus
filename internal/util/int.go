@@ -1,3 +1,6 @@
+// Copyright Siratee K. 2026
+// SPDX-License-Identifier: MIT
+
 package util
 
 import "fmt"

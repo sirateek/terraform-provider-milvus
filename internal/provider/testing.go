@@ -88,12 +88,15 @@ func PreCheck(t *testing.T) {
 		EnableTLS: &enableTLS,
 	}
 
+	t.Logf("Connecting to Milvus at %s", address)
 	client, diag := milvus.ProvideMilvusClient(milvusConfig)
 	if diag != nil {
+		t.Logf("diag: %s", diag.Summary())
 		t.Fatalf("failed to create Milvus client: %s", diag.Summary())
 	}
 
 	// Test the connection
+	t.Logf("Testing Connection")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -116,28 +119,4 @@ func PreCheck(t *testing.T) {
 	AccTestProviderConfig = &ProviderConfig{
 		Client: client,
 	}
-}
-
-// isCollectionNotFoundError checks if the error message indicates a collection not found error.
-func isCollectionNotFoundError(errStr string) bool {
-	// Check for common Milvus error messages
-	if len(errStr) == 0 {
-		return false
-	}
-	return contains(errStr, "not found") ||
-		contains(errStr, "does not exist") ||
-		contains(errStr, "CollectionNotExist")
-}
-
-// contains checks if a string contains a substring.
-func contains(str, substr string) bool {
-	if len(str) == 0 || len(substr) == 0 {
-		return false
-	}
-	for i := 0; i <= len(str)-len(substr); i++ {
-		if str[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

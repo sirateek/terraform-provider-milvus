@@ -5,6 +5,7 @@ package milvus
 
 import (
 	"context"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -13,7 +14,7 @@ import (
 )
 
 func ProvideMilvusClient(config config.Milvus) (*milvusclient.Client, diag.Diagnostic) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Extract string values from pointers, using empty string as default
