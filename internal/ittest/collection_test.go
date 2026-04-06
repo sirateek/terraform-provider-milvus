@@ -348,4 +348,3 @@ func testAccCheckAllFieldTypesSchema(resourceName string) resource.TestCheckFunc
 		return nil
 	}
 }
-
