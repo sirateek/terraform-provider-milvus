@@ -5,6 +5,7 @@ package alias
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -13,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/milvus-io/milvus/client/v2/milvusclient"
+	"github.com/milvus-io/milvus/pkg/v2/util/merr"
 	"github.com/sirateek/terraform-provider-milvus/internal/resources/alias/model"
 )
 
@@ -108,6 +110,9 @@ func (a *Alias) Read(ctx context.Context, request resource.ReadRequest, response
 
 	aliasResult, err := a.client.DescribeAlias(ctx, milvusclient.NewDescribeAliasOption(state.Name.ValueString()))
 	if err != nil {
+		if !errors.Is(err, merr.ErrAliasNotFound) {
+			response.Diagnostics.AddError("Error reading alias", err.Error())
+		}
 		// Alias no longer exists; remove from state.
 		response.State.RemoveResource(ctx)
 		return
