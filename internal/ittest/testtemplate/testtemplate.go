@@ -40,7 +40,18 @@ type CollectionTemplate struct {
 	DeleteProtection      bool
 	ShardNum              int
 	ConsistencyLevel      *string
+	Properties            *CollectionPropertiesTemplate
 	Fields                []FieldTemplate
+}
+
+type CollectionPropertiesTemplate struct {
+	TTLSeconds            *int64
+	MmapEnabled           *bool
+	PartitionKeyIsolation *bool
+	DynamicFieldEnabled   *bool
+	AllowInsertAutoID     *bool
+	AllowUpdateAutoID     *bool
+	Timezone              *string
 }
 
 type FieldTemplate struct {
@@ -61,6 +72,8 @@ func (c TerraformTemplate) Render() string {
 			case *bool:
 				return *p
 			case *int:
+				return *p
+			case *int64:
 				return *p
 			case *string:
 				return *p
@@ -93,6 +106,9 @@ func BoolPtr(v bool) *bool { return &v }
 
 // IntPtr is a helper to get a pointer to an int literal.
 func IntPtr(v int) *int { return &v }
+
+// Int64Ptr is a helper to get a pointer to an int64 literal.
+func Int64Ptr(v int64) *int64 { return &v }
 
 // StringPtr is a helper to get a pointer to a string literal.
 func StringPtr(v string) *string { return &v }
