@@ -46,35 +46,36 @@ func (p *MilvusProvider) Metadata(ctx context.Context, req provider.MetadataRequ
 
 func (p *MilvusProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "The **Milvus** provider enables infrastructure-as-code management of [Milvus](https://milvus.io), an open-source, cloud-native vector database built for storing, indexing, and searching massive datasets of high-dimensional embedding vectors.\n\nUse this provider to declaratively manage Milvus resources — collections, indexes, and aliases — directly from Terraform, making it easy to version-control your vector database schema alongside the rest of your infrastructure.\n\n## Supported Resources\n\n| Resource | Description |\n|---|---|\n| `milvus_collection` | Manage Milvus collections and their schemas |\n| `milvus_index` | Create and manage indexes on collection fields |\n| `milvus_alias` | Manage aliases that point to collections |\n\n## Authentication\n\nThe provider supports connecting to both self-hosted Milvus clusters and Zilliz Cloud:\n\n- **Address / Username / Password** — for self-hosted Milvus\n- **API Key** — for Zilliz Cloud or API-key-enabled deployments\n- **TLS** — optionally enable encrypted connections\n\n## Example Usage\n\n```hcl\nprovider \"milvus\" {\n  address = \"localhost:19530\"\n}\n```",
 		Attributes: map[string]schema.Attribute{
 			"address": schema.StringAttribute{
-				MarkdownDescription: "Address of Milvus",
+				MarkdownDescription: "The `host:port` address of the Milvus server (e.g. `localhost:19530`). Can also be set via the `MILVUS_ADDRESS` environment variable.",
 				Optional:            true,
 			},
 			"username": schema.StringAttribute{
-				MarkdownDescription: "Username of Milvus",
+				MarkdownDescription: "Username for Milvus authentication. Required when Milvus is running with authentication enabled. Can also be set via the `MILVUS_USERNAME` environment variable.",
 				Optional:            true,
 			},
 			"password": schema.StringAttribute{
-				MarkdownDescription: "Password of Milvus",
+				MarkdownDescription: "Password for Milvus authentication. Used together with `username`. Can also be set via the `MILVUS_PASSWORD` environment variable.",
 				Optional:            true,
 				Sensitive:           true,
 			},
 			"db_name": schema.StringAttribute{
-				MarkdownDescription: "Database name of Milvus to manage",
+				MarkdownDescription: "The Milvus database to operate on. Defaults to the `default` database when not specified. Can also be set via the `MILVUS_DB_NAME` environment variable.",
 				Optional:            true,
 			},
 			"enable_tls": schema.BoolAttribute{
-				MarkdownDescription: "Enable TLS for Milvus connection",
+				MarkdownDescription: "Whether to use TLS when connecting to Milvus. Set to `true` for Zilliz Cloud or any TLS-terminated endpoint. Defaults to `false`.",
 				Optional:            true,
 			},
 			"api_key": schema.StringAttribute{
-				MarkdownDescription: "API key of Milvus",
+				MarkdownDescription: "API key for Zilliz Cloud or API-key-enabled Milvus deployments. When set, this takes precedence over `username`/`password`. Can also be set via the `MILVUS_API_KEY` environment variable.",
 				Optional:            true,
 				Sensitive:           true,
 			},
 			"server_version": schema.StringAttribute{
-				MarkdownDescription: "Version of Milvus to manage",
+				MarkdownDescription: "Target Milvus server version (e.g. `2.4.0`). When specified, the provider will validate compatibility against this version. Optional — omit to let the provider detect the version automatically.",
 				Optional:            true,
 			},
 		},

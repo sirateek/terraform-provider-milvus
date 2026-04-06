@@ -3,12 +3,18 @@
 page_title: "milvus_index Resource - milvus"
 subcategory: ""
 description: |-
-  Manages a Milvus index.
+  Manages a Milvus index on a collection field.
+  Indexes accelerate vector similarity search and scalar filtering. Each field can have at most one index. All index properties are immutable — to change an index you must delete it and create a new one.
+  ~> A milvus_collection cannot be destroyed while any milvus_index resource still references it. Remove all indexes before (or together with) the collection.
 ---
 
 # milvus_index (Resource)
 
-Manages a Milvus index.
+Manages a Milvus **index** on a collection field.
+
+Indexes accelerate vector similarity search and scalar filtering. Each field can have at most one index. All index properties are **immutable** — to change an index you must delete it and create a new one.
+
+~> A `milvus_collection` cannot be destroyed while any `milvus_index` resource still references it. Remove all indexes before (or together with) the collection.
 
 
 
@@ -17,27 +23,43 @@ Manages a Milvus index.
 
 ### Required
 
-- `collection_name` (String) The name of the collection to create the index on. Required and immutable.
-- `field_name` (String) The name of the field to create the index on. Required and immutable.
-- `index_type` (String) The type of index (e.g., FLAT, IVF_FLAT, IVF_SQ8, IVF_PQ, HNSW, DISKANN, SCANN, AUTOINDEX, TRIE, SORTED, INVERTED, BITMAP, SPARSE_INVERTED, SPARSE_WAND, RTREE, MINHASH_LSH, SPARSE_CORD_INVERTED). Required and immutable.
-- `metric_type` (String) The metric type for vector distance (e.g., L2, COSINE, IP). Required for vector indexes.
+- `collection_name` (String) Name of the collection that contains the field to index. **Immutable** — changing this forces a new index to be created.
+- `field_name` (String) Name of the field to build the index on. **Immutable** — changing this forces a new index to be created.
+- `index_type` (String) Algorithm used to build the index. **Immutable** — changing this forces a new index to be created.
+
+**Vector indexes:** `FLAT`, `IVF_FLAT`, `IVF_SQ8`, `IVF_PQ`, `HNSW`, `DISKANN`, `SCANN`, `AUTOINDEX`, `SPARSE_INVERTED`, `SPARSE_WAND`, `MINHASH_LSH`
+
+**Scalar indexes:** `TRIE` (VarChar), `SORTED` (numeric), `INVERTED`, `BITMAP`, `RTREE`
+- `metric_type` (String) Distance metric used for vector similarity calculations. **Immutable** — changing this forces a new index to be created.
+
+| Value | Use case |
+|---|---|
+| `L2` | Euclidean distance. Common for dense float vectors. |
+| `COSINE` | Cosine similarity. Good for normalised embeddings. |
+| `IP` | Inner product. Equivalent to cosine when vectors are unit-normalised. |
+| `HAMMING` | Bit-level Hamming distance. For binary vectors. |
+| `JACCARD` | Jaccard similarity. For binary vectors. |
+
+For scalar indexes this field is still required by the API but has no effect.
 
 ### Optional
 
-- `index_name` (String) The name of the index. If not specified, Milvus will generate one automatically.
-- `index_params` (Attributes) Index-specific parameters. Optional and varies by index type. (see [below for nested schema](#nestedatt--index_params))
+- `index_name` (String) Optional display name for the index. When omitted, the field name is used as the index name. **Immutable** — changing this forces a new index to be created.
+- `index_params` (Attributes) Index-type-specific tuning parameters. Only the parameters relevant to the chosen `index_type` need to be set; all others are ignored. (see [below for nested schema](#nestedatt--index_params))
 
 <a id="nestedatt--index_params"></a>
 ### Nested Schema for `index_params`
 
 Optional:
 
-- `drop_ratio` (Number) Drop ratio for sparse indexes.
-- `ef` (Number) Search parameter for HNSW index.
-- `ef_construction` (Number) Construction parameter for HNSW index.
-- `graph_degree` (Number) Graph degree for GPU CAGRA index.
-- `intermediate_graph_degree` (Number) Intermediate graph degree for GPU CAGRA index.
-- `m` (Number) Number of subquantizers for IVF_PQ or degree parameter for HNSW.
-- `nbits` (Number) Bits per subvector for IVF_PQ index.
-- `nlist` (Number) Number of clusters (inverted lists) for IVF-based indexes.
-- `with_raw_data` (Boolean) Whether to store raw data for SCANN index.
+- `drop_ratio` (Number) For sparse vector indexes (`SPARSE_INVERTED`, `SPARSE_WAND`): fraction of the smallest magnitude values to drop during indexing. Range `0.0`–`1.0`. Higher values reduce index size but may lower recall. Defaults to `0.2`.
+- `ef` (Number) For `HNSW`: size of the dynamic candidate list during search. Higher values improve recall at the cost of query latency. Must be ≥ the `top_k` requested at query time.
+- `ef_construction` (Number) For `HNSW`: size of the dynamic candidate list during graph construction. Higher values produce a better-quality graph (higher recall) at the cost of longer build time. Must be ≥ `m`. Typical range: `8`–`512`.
+- `graph_degree` (Number) For GPU `CAGRA` index: degree of the final search graph. Must be less than or equal to `intermediate_graph_degree`.
+- `intermediate_graph_degree` (Number) For GPU `CAGRA` index: degree of the intermediate kNN graph constructed during the build phase. Affects build quality and time.
+- `m` (Number) For `HNSW`: maximum number of bidirectional links per node (graph degree). Higher `m` improves recall but increases memory usage and build time. Typical range: `4`–`64`.
+
+For `IVF_PQ`: number of sub-quantizers. Must divide the vector dimension evenly.
+- `nbits` (Number) For `IVF_PQ`: bits used to encode each sub-vector. Higher values improve accuracy at the cost of memory. Valid values: `8` (default).
+- `nlist` (Number) Number of cluster centroids (inverted lists) for IVF-based indexes (`IVF_FLAT`, `IVF_SQ8`, `IVF_PQ`, `SCANN`). Higher values improve recall at the cost of slower build time and larger memory usage. Typical range: `64`–`65536`.
+- `with_raw_data` (Boolean) For `SCANN`: when `true`, raw vector data is stored alongside the index to enable reranking, improving recall at a small storage cost.

@@ -33,18 +33,18 @@ func NewMilvusAliasResource() resource.Resource {
 
 func (a *Alias) Schema(_ context.Context, _ resource.SchemaRequest, response *resource.SchemaResponse) {
 	response.Schema = schema.Schema{
-		Description: "In Milvus, an alias is a secondary, mutable name for a collection. Using aliases provides a layer of abstraction that allows you to dynamically switch between collections without modifying your application code. This is particularly useful in production environments for seamless data updates, A/B testing, and other operational tasks.",
+		MarkdownDescription: "Manages a Milvus **alias** — a secondary, mutable name that points to a collection.\n\nAliases let you decouple your application's connection string from the physical collection name. You can atomically re-point an alias to a different collection (e.g. after a data refresh or during A/B testing) without touching application code.\n\n~> **Note:** The alias `name` is immutable. To rename an alias you must destroy and recreate it. The `collection_name` it points to can be updated in-place at any time.",
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
-				Description: "The name of the alias. Required and immutable.",
-				Required:    true,
+				MarkdownDescription: "Unique name of the alias within the database. **Immutable** — changing this forces a new resource to be created.",
+				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"collection_name": schema.StringAttribute{
-				Description: "The name of the collection to which the alias points. Required.",
-				Required:    true,
+				MarkdownDescription: "Name of the collection this alias points to. Can be updated in-place; Milvus will atomically re-point the alias without downtime.",
+				Required:            true,
 			},
 		},
 	}

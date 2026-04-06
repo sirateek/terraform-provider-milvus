@@ -63,81 +63,80 @@ func (r *MilvusIndexResource) Metadata(ctx context.Context, req resource.Metadat
 // Schema defines the schema for the resource.
 func (r *MilvusIndexResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages a Milvus index.",
+		MarkdownDescription: "Manages a Milvus **index** on a collection field.\n\nIndexes accelerate vector similarity search and scalar filtering. Each field can have at most one index. All index properties are **immutable** — to change an index you must delete it and create a new one.\n\n~> A `milvus_collection` cannot be destroyed while any `milvus_index` resource still references it. Remove all indexes before (or together with) the collection.",
 		Attributes: map[string]schema.Attribute{
 			"collection_name": schema.StringAttribute{
-				MarkdownDescription: "The name of the collection to create the index on. Required and immutable.",
+				MarkdownDescription: "Name of the collection that contains the field to index. **Immutable** — changing this forces a new index to be created.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"field_name": schema.StringAttribute{
-				MarkdownDescription: "The name of the field to create the index on. Required and immutable.",
+				MarkdownDescription: "Name of the field to build the index on. **Immutable** — changing this forces a new index to be created.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"index_name": schema.StringAttribute{
-				MarkdownDescription: "The name of the index. If not specified, Milvus will generate one automatically.",
+				MarkdownDescription: "Optional display name for the index. When omitted, the field name is used as the index name. **Immutable** — changing this forces a new index to be created.",
 				Optional:            true,
-
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"index_type": schema.StringAttribute{
-				MarkdownDescription: "The type of index (e.g., FLAT, IVF_FLAT, IVF_SQ8, IVF_PQ, HNSW, DISKANN, SCANN, AUTOINDEX, TRIE, SORTED, INVERTED, BITMAP, SPARSE_INVERTED, SPARSE_WAND, RTREE, MINHASH_LSH, SPARSE_CORD_INVERTED). Required and immutable.",
+				MarkdownDescription: "Algorithm used to build the index. **Immutable** — changing this forces a new index to be created.\n\n**Vector indexes:** `FLAT`, `IVF_FLAT`, `IVF_SQ8`, `IVF_PQ`, `HNSW`, `DISKANN`, `SCANN`, `AUTOINDEX`, `SPARSE_INVERTED`, `SPARSE_WAND`, `MINHASH_LSH`\n\n**Scalar indexes:** `TRIE` (VarChar), `SORTED` (numeric), `INVERTED`, `BITMAP`, `RTREE`",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"metric_type": schema.StringAttribute{
-				MarkdownDescription: "The metric type for vector distance (e.g., L2, COSINE, IP). Required for vector indexes.",
+				MarkdownDescription: "Distance metric used for vector similarity calculations. **Immutable** — changing this forces a new index to be created.\n\n| Value | Use case |\n|---|---|\n| `L2` | Euclidean distance. Common for dense float vectors. |\n| `COSINE` | Cosine similarity. Good for normalised embeddings. |\n| `IP` | Inner product. Equivalent to cosine when vectors are unit-normalised. |\n| `HAMMING` | Bit-level Hamming distance. For binary vectors. |\n| `JACCARD` | Jaccard similarity. For binary vectors. |\n\nFor scalar indexes this field is still required by the API but has no effect.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"index_params": schema.SingleNestedAttribute{
-				MarkdownDescription: "Index-specific parameters. Optional and varies by index type.",
+				MarkdownDescription: "Index-type-specific tuning parameters. Only the parameters relevant to the chosen `index_type` need to be set; all others are ignored.",
 				Attributes: map[string]schema.Attribute{
 					"nlist": schema.Int64Attribute{
-						MarkdownDescription: "Number of clusters (inverted lists) for IVF-based indexes.",
+						MarkdownDescription: "Number of cluster centroids (inverted lists) for IVF-based indexes (`IVF_FLAT`, `IVF_SQ8`, `IVF_PQ`, `SCANN`). Higher values improve recall at the cost of slower build time and larger memory usage. Typical range: `64`–`65536`.",
 						Optional:            true,
 					},
 					"m": schema.Int64Attribute{
-						MarkdownDescription: "Number of subquantizers for IVF_PQ or degree parameter for HNSW.",
+						MarkdownDescription: "For `HNSW`: maximum number of bidirectional links per node (graph degree). Higher `m` improves recall but increases memory usage and build time. Typical range: `4`–`64`.\n\nFor `IVF_PQ`: number of sub-quantizers. Must divide the vector dimension evenly.",
 						Optional:            true,
 					},
 					"nbits": schema.Int64Attribute{
-						MarkdownDescription: "Bits per subvector for IVF_PQ index.",
+						MarkdownDescription: "For `IVF_PQ`: bits used to encode each sub-vector. Higher values improve accuracy at the cost of memory. Valid values: `8` (default).",
 						Optional:            true,
 					},
 					"ef_construction": schema.Int64Attribute{
-						MarkdownDescription: "Construction parameter for HNSW index.",
+						MarkdownDescription: "For `HNSW`: size of the dynamic candidate list during graph construction. Higher values produce a better-quality graph (higher recall) at the cost of longer build time. Must be ≥ `m`. Typical range: `8`–`512`.",
 						Optional:            true,
 					},
 					"ef": schema.Int64Attribute{
-						MarkdownDescription: "Search parameter for HNSW index.",
+						MarkdownDescription: "For `HNSW`: size of the dynamic candidate list during search. Higher values improve recall at the cost of query latency. Must be ≥ the `top_k` requested at query time.",
 						Optional:            true,
 					},
 					"with_raw_data": schema.BoolAttribute{
-						MarkdownDescription: "Whether to store raw data for SCANN index.",
+						MarkdownDescription: "For `SCANN`: when `true`, raw vector data is stored alongside the index to enable reranking, improving recall at a small storage cost.",
 						Optional:            true,
 					},
 					"drop_ratio": schema.Float64Attribute{
-						MarkdownDescription: "Drop ratio for sparse indexes.",
+						MarkdownDescription: "For sparse vector indexes (`SPARSE_INVERTED`, `SPARSE_WAND`): fraction of the smallest magnitude values to drop during indexing. Range `0.0`–`1.0`. Higher values reduce index size but may lower recall. Defaults to `0.2`.",
 						Optional:            true,
 					},
 					"intermediate_graph_degree": schema.Int64Attribute{
-						MarkdownDescription: "Intermediate graph degree for GPU CAGRA index.",
+						MarkdownDescription: "For GPU `CAGRA` index: degree of the intermediate kNN graph constructed during the build phase. Affects build quality and time.",
 						Optional:            true,
 					},
 					"graph_degree": schema.Int64Attribute{
-						MarkdownDescription: "Graph degree for GPU CAGRA index.",
+						MarkdownDescription: "For GPU `CAGRA` index: degree of the final search graph. Must be less than or equal to `intermediate_graph_degree`.",
 						Optional:            true,
 					},
 				},
