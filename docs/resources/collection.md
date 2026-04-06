@@ -3,12 +3,18 @@
 page_title: "milvus_collection Resource - milvus"
 subcategory: ""
 description: |-
-  Milvus Collection Configs
+  Manages a Milvus collection — the top-level container for vector and scalar data, analogous to a table in a relational database.
+  A collection has a fixed schema (fields) that is defined at creation time. Most schema properties are immutable and require the collection to be recreated if changed. The consistency_level and properties block can be updated in-place.
+  ~> Delete protection is enabled by default (delete_protection = true). Set it to false before destroying a collection to prevent accidental data loss.
 ---
 
 # milvus_collection (Resource)
 
-Milvus Collection Configs
+Manages a Milvus **collection** — the top-level container for vector and scalar data, analogous to a table in a relational database.
+
+A collection has a fixed schema (fields) that is defined at creation time. Most schema properties are **immutable** and require the collection to be recreated if changed. The `consistency_level` and `properties` block can be updated in-place.
+
+~> **Delete protection** is enabled by default (`delete_protection = true`). Set it to `false` before destroying a collection to prevent accidental data loss.
 
 
 
@@ -17,43 +23,54 @@ Milvus Collection Configs
 
 ### Required
 
-- `fields` (Attributes List) Schema fields for the collection. Required and immutable. (see [below for nested schema](#nestedatt--fields))
-- `name` (String) The name of the collection. Required and immutable.
+- `fields` (Attributes List) Ordered list of fields that define the collection schema. At least one primary key field and one vector field are required. Scalar fields can be added after creation; vector fields and the primary key are **immutable**.
+
+~> Removing or changing an existing field's type forces the entire collection to be recreated. (see [below for nested schema](#nestedatt--fields))
+- `name` (String) Unique name of the collection within the database. **Immutable** — changing this forces a new collection to be created.
 
 ### Optional
 
-- `auto_id` (Boolean) Whether to automatically generate IDs for primary key field. Optional and immutable.
-- `consistency_level` (String) Consistency level of the collection. Valid values: Strong, Bounded, Session, Eventually. Optional and mutable.
-- `delete_protection` (Boolean) This flag prevent accidentally remove the collection by this Provider, Some operation of Milvus require recreation of Collection. Optional, Default to True
-- `description` (String) Description of the collection. Optional and immutable.
-- `enable_dynamic_field` (Boolean) Whether to enable dynamic field. Optional and immutable.
-- `properties` (Attributes) Additional properties for the collection. Optional and mutable. (see [below for nested schema](#nestedatt--properties))
-- `shard_num` (Number) Number of shards for the collection. Optional and immutable after creation.
+- `auto_id` (Boolean) When `true`, Milvus automatically generates a unique ID for each inserted entity, so the primary key field does not need to be supplied by the client. **Immutable** — changing this forces a new collection to be created. Defaults to `false`.
+- `consistency_level` (String) Read consistency guarantee for the collection. Accepted values:
+
+| Value | Behaviour |
+|---|---|
+| `Strong` | Always reads the latest data. Highest consistency, highest latency. |
+| `Bounded` | Reads data that may be slightly behind the latest write. Good balance. |
+| `Session` | Guarantees that a client sees its own writes. |
+| `Eventually` | No consistency guarantee. Lowest latency. |
+
+Can be updated in-place. Defaults to `Strong`.
+- `delete_protection` (Boolean) When `true` (default), the provider will refuse to destroy this collection, protecting against accidental deletion. Set to `false` to allow `terraform destroy` or removal from configuration. Note that some Milvus operations (e.g. schema changes that require recreation) also require this to be `false`.
+- `description` (String) Human-readable description of the collection. **Immutable** — changing this forces a new collection to be created. Defaults to an empty string.
+- `enable_dynamic_field` (Boolean) When `true`, entities may contain fields not defined in the schema. Extra fields are stored in a reserved JSON column (`$meta`), enabling schema-on-write flexibility. **Immutable** — changing this forces a new collection to be created. Defaults to `false`.
+- `properties` (Attributes) Optional runtime properties for the collection. All properties in this block can be updated in-place without recreating the collection. (see [below for nested schema](#nestedatt--properties))
+- `shard_num` (Number) Number of shards (write channels) for the collection. Higher values increase write throughput but also resource usage. **Immutable** — changing this forces a new collection to be created. Defaults to `1`.
 
 ### Read-Only
 
-- `id` (Number) The unique identifier of the collection generated by Milvus. Computed.
+- `id` (Number) Milvus-generated numeric identifier for the collection. Read-only.
 
 <a id="nestedatt--fields"></a>
 ### Nested Schema for `fields`
 
 Required:
 
-- `data_type` (String) Field data type (e.g., Int64, FloatVector, VarChar). Required.
-- `name` (String) Field name. Required.
+- `data_type` (String) Data type of the field. Supported scalar types: `Bool`, `Int8`, `Int16`, `Int32`, `Int64`, `Float`, `Double`, `VarChar`, `JSON`, `Array`. Supported vector types: `FloatVector`, `BinaryVector`, `Float16Vector`, `BFloat16Vector`, `SparseFloatVector`.
+- `name` (String) Name of the field. Must be unique within the collection.
 
 Optional:
 
-- `description` (String) Description of the field. Optional and computed.
-- `dim` (Number) Dimension for vector fields. Optional.
-- `element_type` (String) Element type for array fields. Optional.
-- `is_auto_id` (Boolean) Whether this field auto-generates IDs. Optional and computed.
-- `is_clustering_key` (Boolean) Whether this field is a clustering key. Optional and computed.
-- `is_partition_key` (Boolean) Whether this field is a partition key. Optional and computed.
-- `is_primary_key` (Boolean) Whether this field is the primary key. Optional and computed.
-- `max_capacity` (Number) Maximum capacity for array fields. Optional.
-- `max_length` (Number) Maximum length for varchar fields. Optional.
-- `nullable` (Boolean) Whether this field is nullable. Optional and computed.
+- `description` (String) Human-readable description of the field. Optional. Defaults to an empty string.
+- `dim` (Number) Dimensionality of the vector field (number of floats/bytes per vector). Required for all vector types (`FloatVector`, `BinaryVector`, `Float16Vector`, `BFloat16Vector`). For `BinaryVector`, the value must be a multiple of 8.
+- `element_type` (String) Scalar type of each element in an `Array` field (e.g. `Int64`, `VarChar`). Required when `data_type = "Array"`.
+- `is_auto_id` (Boolean) When `true` on the primary key field, Milvus auto-generates IDs on insert. Equivalent to setting `auto_id = true` at the collection level. Defaults to `false`.
+- `is_clustering_key` (Boolean) Designates this field as the clustering key. Milvus uses this to co-locate entities with similar key values, improving range-query performance. Only one field may be the clustering key. Defaults to `false`.
+- `is_partition_key` (Boolean) Designates this field as the partition key. Milvus physically routes entities by the hash of this field's value. Only one field may be the partition key. Defaults to `false`.
+- `is_primary_key` (Boolean) Marks this field as the primary key. Exactly one field in the schema must have this set to `true`. Defaults to `false`.
+- `max_capacity` (Number) Maximum number of elements in an `Array` field. Required when `data_type = "Array"`.
+- `max_length` (Number) Maximum byte length for `VarChar` fields. Required when `data_type = "VarChar"`. Maximum allowed value is `65535`.
+- `nullable` (Boolean) When `true`, this field accepts `null` values on insert. Not applicable to primary key or vector fields. Defaults to `false`.
 
 
 <a id="nestedatt--properties"></a>
@@ -61,12 +78,10 @@ Optional:
 
 Optional:
 
-- `allow_insert_auto_id` (Boolean)
-- `allow_update_auto_id` (Boolean)
-- `collection_ttl_seconds` (Number) If the data of a collection needs to be deleted after a specific period, consider setting its Time-To-Live (TTL) in seconds. Once the TTL times out, Milvus deletes all entities from the collection.
-
-The deletion is asynchronous, indicating that searches and queries are still possible before the deletion is complete.
-- `dynamic_field_enabled` (Boolean)
-- `mmap_enabled` (Boolean) Memory mapping (Mmap) enables direct memory access to large files on disk, allowing Milvus to store indexes and data in both memory and hard drives. This approach helps optimize data placement policy based on access frequency, expanding storage capacity for collections without impacting search performance.
-- `partition_key_isolation` (Boolean) With Partition Key Isolation enabled, Milvus groups entities based on the Partition Key value and creates a separate index for each of these groups. Upon receiving a search request, Milvus locates the index based on the Partition Key value specified in the filtering condition and restricts the search scope within the entities included in the index, thus avoiding scanning irrelevant entities during the search and greatly enhancing the search performance.
-- `timezone` (String)
+- `allow_insert_auto_id` (Boolean) When `true`, allows inserting entities without providing the primary key value even if `auto_id` was not enabled at collection creation. Use with caution — only effective on supported Milvus versions.
+- `allow_update_auto_id` (Boolean) When `true`, allows updating the auto-generated primary key. Only applicable when `auto_id = true`.
+- `collection_ttl_seconds` (Number) Time-To-Live for collection data in seconds. Entities older than this value are automatically expired and removed by Milvus. The deletion runs asynchronously — queries may still return expired data briefly after the TTL elapses. Omit or set to `0` to disable TTL.
+- `dynamic_field_enabled` (Boolean) Overrides the dynamic field setting at the properties level. Prefer the top-level `enable_dynamic_field` attribute for new collections.
+- `mmap_enabled` (Boolean) When `true`, Milvus uses memory-mapped I/O (mmap) for indexes and raw data, allowing the working set to exceed available RAM by paging from disk on demand. Useful for large collections where cost of RAM is a constraint. May increase tail latency under memory pressure.
+- `partition_key_isolation` (Boolean) When `true`, Milvus builds a separate index per distinct value of the partition key field. Search requests that filter on the partition key will only scan the relevant sub-index, significantly reducing unnecessary data access. Requires a field with `is_partition_key = true`.
+- `timezone` (String) IANA timezone identifier (e.g. `America/New_York`) used for time-based TTL calculations. Defaults to UTC when not set.

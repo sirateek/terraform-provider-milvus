@@ -56,4 +56,10 @@ resource "milvus_index" "{{ .TerraformResourceName }}" {
   }
   {{- end }}
 }
+{{ end }}
+{{- range .Aliases }}
+resource "milvus_alias" "{{ .TerraformResourceName }}" {
+  name            = "{{ .AliasName }}"
+  collection_name = {{ .CollectionName }}
+}
 {{ end }}`
