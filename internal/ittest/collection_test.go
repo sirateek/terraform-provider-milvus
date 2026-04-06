@@ -6,6 +6,7 @@ package ittest
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -155,105 +156,105 @@ func testAccCheckBasicCollectionSchema(resourceName string) resource.TestCheckFu
 	}
 }
 
-//func (s *ProviderTestSuite) TestDeleteProtectionCollection() {
-//	collectionTemplate := func(deleteProtection bool) testtemplate.TerraformTemplate {
-//		return testtemplate.TerraformTemplate{
-//			Collections: []testtemplate.CollectionTemplate{
-//				{
-//					Name:                  s.testCollectionName,
-//					TerraformResourceName: "test_delete_protection",
-//					Description:           "Test collection",
-//					AutoID:                false,
-//					DeleteProtection:      deleteProtection,
-//					ShardNum:              1,
-//					Fields: []testtemplate.FieldTemplate{
-//						{
-//							Name:         "id",
-//							DataType:     "Int64",
-//							IsPrimaryKey: testtemplate.BoolPtr(true),
-//						},
-//						{
-//							Name:     "embedding",
-//							DataType: "FloatVector",
-//							Dim:      testtemplate.IntPtr(768),
-//						},
-//					},
-//				},
-//			},
-//		}
-//	}
-//
-//	resource.Test(s.T(), resource.TestCase{
-//		PreCheck:                 func() { provider.PreCheck(s.T()) },
-//		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
-//		CheckDestroy:             testAccCheckCollectionDestroyed(s.testCollectionName),
-//		Steps: []resource.TestStep{
-//			// Step 1: Create with delete_protection = true
-//			{
-//				Config: collectionTemplate(true).Render(),
-//				Check: resource.ComposeAggregateTestCheckFunc(
-//					testAccCheckCollectionExists("milvus_collection.test_delete_protection"),
-//					resource.TestCheckResourceAttr("milvus_collection.test_delete_protection", "delete_protection", "true"),
-//				),
-//			},
-//			// Step 2: Attempt removal — must fail because delete_protection is still true
-//			{
-//				Config:      testtemplate.TerraformTemplate{Collections: []testtemplate.CollectionTemplate{}}.Render(),
-//				ExpectError: regexp.MustCompile(fmt.Sprintf("Collection %s is protected from deletion", s.testCollectionName)),
-//			},
-//			// Step 3: Disable delete_protection so the post-test destroy succeeds
-//			{
-//				Config: collectionTemplate(false).Render(),
-//				Check: resource.ComposeAggregateTestCheckFunc(
-//					resource.TestCheckResourceAttr("milvus_collection.test_delete_protection", "delete_protection", "false"),
-//				),
-//			},
-//		},
-//	})
-//}
-//
-//func (s *ProviderTestSuite) TestCreateAllFieldTypesCollection() {
-//	resource.Test(s.T(), resource.TestCase{
-//		PreCheck:                 func() { provider.PreCheck(s.T()) },
-//		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
-//		CheckDestroy:             testAccCheckCollectionDestroyed(s.testCollectionName),
-//		Steps: []resource.TestStep{
-//			{
-//				Config: testtemplate.TerraformTemplate{
-//					Collections: []testtemplate.CollectionTemplate{
-//						{
-//							Name:                  s.testCollectionName,
-//							TerraformResourceName: "test_all_fields",
-//							Description:           "Test all field types",
-//							AutoID:                false,
-//							DeleteProtection:      false,
-//							ShardNum:              1,
-//							Fields: []testtemplate.FieldTemplate{
-//								{Name: "id", DataType: "Int64", IsPrimaryKey: testtemplate.BoolPtr(true)},
-//								{Name: "int8_field", DataType: "Int8"},
-//								{Name: "int16_field", DataType: "Int16"},
-//								{Name: "int32_field", DataType: "Int32"},
-//								{Name: "float_field", DataType: "Float"},
-//								{Name: "bool_field", DataType: "Bool"},
-//								{Name: "varchar_field", DataType: "VarChar", MaxLength: testtemplate.IntPtr(256)},
-//								{Name: "json_field", DataType: "JSON"},
-//								{Name: "array_field", DataType: "Array", ElementType: testtemplate.StringPtr("Int64"), MaxCapacity: testtemplate.IntPtr(100)},
-//								{Name: "float_vector", DataType: "FloatVector", Dim: testtemplate.IntPtr(128)},
-//								{Name: "binary_vector", DataType: "BinaryVector", Dim: testtemplate.IntPtr(128)},
-//								{Name: "float16_vector", DataType: "Float16Vector", Dim: testtemplate.IntPtr(128)},
-//								{Name: "bfloat16_vector", DataType: "BFloat16Vector", Dim: testtemplate.IntPtr(128)},
-//							},
-//						},
-//					},
-//				}.Render(),
-//				Check: resource.ComposeAggregateTestCheckFunc(
-//					testAccCheckCollectionExists("milvus_collection.test_all_fields"),
-//					testAccCheckAllFieldTypesSchema("milvus_collection.test_all_fields"),
-//				),
-//			},
-//		},
-//	})
-//}
+func (s *ProviderTestSuite) TestDeleteProtectionCollection() {
+	collectionTemplate := func(deleteProtection bool) testtemplate.TerraformTemplate {
+		return testtemplate.TerraformTemplate{
+			Collections: []testtemplate.CollectionTemplate{
+				{
+					Name:                  s.testCollectionName,
+					TerraformResourceName: "test_delete_protection",
+					Description:           "Test collection",
+					AutoID:                false,
+					DeleteProtection:      deleteProtection,
+					ShardNum:              1,
+					Fields: []testtemplate.FieldTemplate{
+						{
+							Name:         "id",
+							DataType:     "Int64",
+							IsPrimaryKey: testtemplate.BoolPtr(true),
+						},
+						{
+							Name:     "embedding",
+							DataType: "FloatVector",
+							Dim:      testtemplate.IntPtr(768),
+						},
+					},
+				},
+			},
+		}
+	}
+
+	resource.Test(s.T(), resource.TestCase{
+		PreCheck:                 func() { provider.PreCheck(s.T()) },
+		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCollectionDestroyed(s.testCollectionName),
+		Steps: []resource.TestStep{
+			// Step 1: Create with delete_protection = true
+			{
+				Config: collectionTemplate(true).Render(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckCollectionExists("milvus_collection.test_delete_protection"),
+					resource.TestCheckResourceAttr("milvus_collection.test_delete_protection", "delete_protection", "true"),
+				),
+			},
+			// Step 2: Attempt removal — must fail because delete_protection is still true
+			{
+				Config:      testtemplate.TerraformTemplate{Collections: []testtemplate.CollectionTemplate{}}.Render(),
+				ExpectError: regexp.MustCompile(fmt.Sprintf("Collection %s is protected from deletion", s.testCollectionName)),
+			},
+			// Step 3: Disable delete_protection so the post-test destroy succeeds
+			{
+				Config: collectionTemplate(false).Render(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("milvus_collection.test_delete_protection", "delete_protection", "false"),
+				),
+			},
+		},
+	})
+}
+
+func (s *ProviderTestSuite) TestCreateAllFieldTypesCollection() {
+	resource.Test(s.T(), resource.TestCase{
+		PreCheck:                 func() { provider.PreCheck(s.T()) },
+		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCollectionDestroyed(s.testCollectionName),
+		Steps: []resource.TestStep{
+			{
+				Config: testtemplate.TerraformTemplate{
+					Collections: []testtemplate.CollectionTemplate{
+						{
+							Name:                  s.testCollectionName,
+							TerraformResourceName: "test_all_fields",
+							Description:           "Test all field types",
+							AutoID:                false,
+							DeleteProtection:      false,
+							ShardNum:              1,
+							Fields: []testtemplate.FieldTemplate{
+								{Name: "id", DataType: "Int64", IsPrimaryKey: testtemplate.BoolPtr(true)},
+								{Name: "int8_field", DataType: "Int8"},
+								{Name: "int16_field", DataType: "Int16"},
+								{Name: "int32_field", DataType: "Int32"},
+								{Name: "float_field", DataType: "Float"},
+								{Name: "bool_field", DataType: "Bool"},
+								{Name: "varchar_field", DataType: "VarChar", MaxLength: testtemplate.IntPtr(256)},
+								{Name: "json_field", DataType: "JSON"},
+								{Name: "array_field", DataType: "Array", ElementType: testtemplate.StringPtr("Int64"), MaxCapacity: testtemplate.IntPtr(100)},
+								{Name: "float_vector", DataType: "FloatVector", Dim: testtemplate.IntPtr(128)},
+								{Name: "binary_vector", DataType: "BinaryVector", Dim: testtemplate.IntPtr(128)},
+								{Name: "float16_vector", DataType: "Float16Vector", Dim: testtemplate.IntPtr(128)},
+								{Name: "bfloat16_vector", DataType: "BFloat16Vector", Dim: testtemplate.IntPtr(128)},
+							},
+						},
+					},
+				}.Render(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckCollectionExists("milvus_collection.test_all_fields"),
+					testAccCheckAllFieldTypesSchema("milvus_collection.test_all_fields"),
+				),
+			},
+		},
+	})
+}
 
 func testAccCheckAllFieldTypesSchema(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
