@@ -28,6 +28,8 @@ func (s *ProviderTestSuite) TestImportIndex() {
 	indexName := fmt.Sprintf("idx_%s", acctest.RandStringFromCharSet(8, acctest.CharSetAlphaNum))
 
 	// Config that matches the externally-created collection and index.
+	// CollectionName references the collection resource so Terraform knows to
+	// destroy the index before the collection.
 	cfg := testtemplate.TerraformTemplate{
 		Collections: []testtemplate.CollectionTemplate{
 			baseCollectionForIndex(s.testCollectionName),
@@ -35,7 +37,7 @@ func (s *ProviderTestSuite) TestImportIndex() {
 		Indexes: []testtemplate.IndexTemplate{
 			{
 				TerraformResourceName: "test",
-				CollectionName:        fmt.Sprintf("%q", s.testCollectionName),
+				CollectionName:        "milvus_collection.test.name",
 				FieldName:             "embedding",
 				IndexName:             indexName,
 				IndexType:             "FLAT",
@@ -49,26 +51,34 @@ func (s *ProviderTestSuite) TestImportIndex() {
 		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckCollectionAndIndexesDestroyed(s.testCollectionName),
 		Steps: []resource.TestStep{
-			// Step 1: Create collection + index externally via Milvus client.
+			// Step 1: Create collection + index externally via Milvus client, then
+			// import the collection so it is tracked in state.
 			{
 				PreConfig: func() {
 					createIndexExternally(s, s.testCollectionName, "embedding", indexName)
 				},
+				Config:                  cfg,
+				ResourceName:            "milvus_collection.test",
+				ImportState:             true,
+				ImportStateId:           s.testCollectionName,
+				ImportStatePersist:      true,
+				ImportStateVerifyIgnore: []string{"delete_protection"},
+			},
+			// Step 2: Import the index. Collection is already in state from step 1.
+			// Import ID format: <collection_name>/<field_name>/<index_name>
+			{
 				Config:             cfg,
 				ResourceName:       "milvus_index.test",
 				ImportState:        true,
-				ImportStateId:      fmt.Sprintf("%s/%s", s.testCollectionName, indexName),
+				ImportStateId:      fmt.Sprintf("%s/embedding/%s", s.testCollectionName, indexName),
 				ImportStatePersist: true,
-				// index_params is null after import (FLAT has none) and null in
-				// config too — no ignore needed.
-				ImportStateVerifyIgnore: []string{"field_name"},
 			},
-			// Step 2: Plan with matching config — must be empty (no diff).
+			// Step 3: Plan with matching config — must be empty (no diff).
 			{
 				Config:   cfg,
 				PlanOnly: true,
 			},
-			// Step 3: Apply and verify state is fully correct.
+			// Step 4: Apply and verify state is fully correct.
 			{
 				Config: cfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -119,14 +129,21 @@ func (s *ProviderTestSuite) TestImportIndexInvalidID() {
 				Config:        cfg,
 				ResourceName:  "milvus_index.test",
 				ImportState:   true,
-				ImportStateId: "/no-collection",
+				ImportStateId: "/no-collection/index",
 				ExpectError:   errInvalidIndexImportID,
 			},
 			{
 				Config:        cfg,
 				ResourceName:  "milvus_index.test",
 				ImportState:   true,
-				ImportStateId: "no-index/",
+				ImportStateId: "no-field//index",
+				ExpectError:   errInvalidIndexImportID,
+			},
+			{
+				Config:        cfg,
+				ResourceName:  "milvus_index.test",
+				ImportState:   true,
+				ImportStateId: "collection/field/",
 				ExpectError:   errInvalidIndexImportID,
 			},
 		},

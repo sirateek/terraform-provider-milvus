@@ -300,21 +300,21 @@ func (r *MilvusIndexResource) Delete(ctx context.Context, req resource.DeleteReq
 
 // ImportState imports a milvus_index resource.
 //
-// The import ID must be in the format: <collection_name>/<index_name>
+// The import ID must be in the format: <collection_name>/<field_name>/<index_name>
 // where index_name is the explicit index name, or the field name if no
 // index name was set when the index was created.
 //
 // Example:
 //
-//	terraform import milvus_index.my_index my_collection/embedding_flat
+//	terraform import milvus_index.my_index my_collection/embedding/embedding_flat
 func (r *MilvusIndexResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	parts := strings.SplitN(req.ID, "/", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+	parts := strings.SplitN(req.ID, "/", 3)
+	if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" {
 		resp.Diagnostics.AddError(
 			"Invalid import ID format",
 			fmt.Sprintf(
-				"Expected import ID in the format <collection_name>/<index_name>, got %q.\n\n"+
-					"Use the index_name if one was set explicitly, otherwise use the field_name.",
+				"Expected import ID in the format <collection_name>/<field_name>/<index_name>, got %q.\n\n"+
+					"Use the field_name of the indexed field and the index_name if one was set explicitly, otherwise use the field_name as the index_name.",
 				req.ID,
 			),
 		)
@@ -323,7 +323,7 @@ func (r *MilvusIndexResource) ImportState(ctx context.Context, req resource.Impo
 
 	resp.State.SetAttribute(ctx, path.Root("collection_name"), parts[0])
 	resp.State.SetAttribute(ctx, path.Root("field_name"), parts[1])
-	resp.State.SetAttribute(ctx, path.Root("index_name"), parts[1])
+	resp.State.SetAttribute(ctx, path.Root("index_name"), parts[2])
 }
 
 // Helper Functions

@@ -44,23 +44,33 @@ func (s *ProviderTestSuite) TestImportAlias() {
 			testAccCheckCollectionDestroyed(s.testCollectionName),
 		),
 		Steps: []resource.TestStep{
-			// Step 1: Create collection + alias externally via Milvus client, then import.
+			// Step 1: Create collection + alias externally via Milvus client, then
+			// import the collection so it is tracked in state.
 			{
 				PreConfig: func() {
 					createAliasExternally(s, s.testCollectionName, aliasName)
 				},
+				Config:                  cfg,
+				ResourceName:            "milvus_collection.test",
+				ImportState:             true,
+				ImportStateId:           s.testCollectionName,
+				ImportStatePersist:      true,
+				ImportStateVerifyIgnore: []string{"delete_protection"},
+			},
+			// Step 2: Import the alias. Collection is already in state from step 1.
+			{
 				Config:             cfg,
 				ResourceName:       "milvus_alias.test",
 				ImportState:        true,
 				ImportStateId:      aliasName,
 				ImportStatePersist: true,
 			},
-			// Step 2: Plan with matching config — must be empty (no diff).
+			// Step 3: Plan with matching config — must be empty (no diff).
 			{
 				Config:   cfg,
 				PlanOnly: true,
 			},
-			// Step 3: Apply and verify state is fully correct.
+			// Step 4: Apply and verify state is fully correct.
 			{
 				Config: cfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
