@@ -52,6 +52,9 @@ resource "milvus_collection" "{{ .TerraformResourceName }}" {
       {{- if $f.IsPrimaryKey }}
       is_primary_key = {{ deref $f.IsPrimaryKey }}
       {{- end }}
+      {{- if $f.Nullable }}
+      nullable = {{ deref $f.Nullable }}
+      {{- end }}
       {{- if $f.Dim }}
       dim = {{ deref $f.Dim }}
       {{- end }}
