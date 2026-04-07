@@ -6,6 +6,7 @@ package index
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -236,17 +237,27 @@ func (r *MilvusIndexResource) Read(ctx context.Context, req resource.ReadRequest
 
 	// Try to describe the index to verify it still exists
 	opt := milvusclient.NewDescribeIndexOption(state.CollectionName.ValueString(), indexName)
-	_, err := r.client.DescribeIndex(ctx, opt)
+	desc, err := r.client.DescribeIndex(ctx, opt)
 	if err != nil {
 		// If index doesn't exist, remove from state
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	// Index exists and is verified - state is still valid
-	// (Index properties are immutable in Milvus, so we don't need to refresh them)
+	// After import, index_type and metric_type are not in state yet — populate
+	// them from the DescribeIndex response so the post-import plan is empty.
+	if state.IndexType.IsNull() || state.IndexType.IsUnknown() {
+		params := desc.Params()
+		if v, ok := params[index.IndexTypeKey]; ok {
+			state.IndexType = types.StringValue(v)
+		}
+		if v, ok := params[index.MetricTypeKey]; ok {
+			state.MetricType = types.StringValue(v)
+		}
+		// index_name is the authoritative name Milvus stores.
+		state.IndexName = types.StringValue(desc.Name())
+	}
 
-	// Index is verified to exist, set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -287,9 +298,32 @@ func (r *MilvusIndexResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 }
 
-// ImportState imports the resource by collection_name.field_name.
+// ImportState imports a milvus_index resource.
+//
+// The import ID must be in the format: <collection_name>/<index_name>
+// where index_name is the explicit index name, or the field name if no
+// index name was set when the index was created.
+//
+// Example:
+//
+//	terraform import milvus_index.my_index my_collection/embedding_flat
 func (r *MilvusIndexResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("field_name"), req, resp)
+	parts := strings.SplitN(req.ID, "/", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		resp.Diagnostics.AddError(
+			"Invalid import ID format",
+			fmt.Sprintf(
+				"Expected import ID in the format <collection_name>/<index_name>, got %q.\n\n"+
+					"Use the index_name if one was set explicitly, otherwise use the field_name.",
+				req.ID,
+			),
+		)
+		return
+	}
+
+	resp.State.SetAttribute(ctx, path.Root("collection_name"), parts[0])
+	resp.State.SetAttribute(ctx, path.Root("field_name"), parts[1])
+	resp.State.SetAttribute(ctx, path.Root("index_name"), parts[1])
 }
 
 // Helper Functions
