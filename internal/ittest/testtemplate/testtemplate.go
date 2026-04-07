@@ -58,6 +58,7 @@ type FieldTemplate struct {
 	Name         string
 	DataType     string
 	IsPrimaryKey *bool
+	Nullable     *bool
 	Dim          *int
 	MaxLength    *int
 	MaxCapacity  *int
