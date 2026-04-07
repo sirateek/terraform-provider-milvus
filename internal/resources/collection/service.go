@@ -43,9 +43,26 @@ func (r *MilvusCollectionResource) addNewScalarFields(
 		if _, exists := stateFieldNames[f.Name.ValueString()]; exists {
 			continue
 		}
+
+		// Milvus requires new fields added to an existing collection to be
+		// nullable. Catch this early with a clear message rather than letting
+		// the Milvus API return a cryptic error.
+		if !f.Nullable.ValueBool() {
+			diags.AddError(
+				fmt.Sprintf("New field %q must be nullable", f.Name.ValueString()),
+				fmt.Sprintf(
+					"Field %q is being added to the existing collection %q. "+
+						"Milvus only allows adding nullable fields to an existing collection. "+
+						"Set `nullable = true` on this field.",
+					f.Name.ValueString(), plan.Name.ValueString(),
+				),
+			)
+			return diags
+		}
+
 		field, ok := toEntityField(f)
 		if !ok {
-			diags.AddError("Fail to convert field to entity.Field", "Please report this issue to the provider developers.g")
+			diags.AddError("Fail to convert field to entity.Field", "Please report this issue to the provider developers.")
 			return diags
 		}
 		opt := milvusclient.NewAddCollectionFieldOption(plan.Name.ValueString(), field)

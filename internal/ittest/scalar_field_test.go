@@ -4,6 +4,9 @@
 package ittest
 
 import (
+	"fmt"
+	"regexp"
+
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/sirateek/terraform-provider-milvus/internal/ittest/testtemplate"
 	"github.com/sirateek/terraform-provider-milvus/internal/provider"
@@ -144,6 +147,44 @@ func (s *ProviderTestSuite) TestScalarFieldNullableChangeForceRecreation() {
 					Collections: []testtemplate.CollectionTemplate{withNonNullable},
 				}.Render(),
 				PlanOnly: true,
+			},
+		},
+	})
+}
+
+// TestAddNonNullableScalarFieldRejected verifies that the provider raises a clear
+// error when a user attempts to add a non-nullable scalar field to an existing
+// collection, before the Milvus API is ever called.
+func (s *ProviderTestSuite) TestAddNonNullableScalarFieldRejected() {
+	base := testtemplate.TerraformTemplate{
+		Collections: []testtemplate.CollectionTemplate{
+			collectionWithExtraFields(s.testCollectionName),
+		},
+	}
+	withNonNullable := testtemplate.TerraformTemplate{
+		Collections: []testtemplate.CollectionTemplate{
+			collectionWithExtraFields(s.testCollectionName,
+				// nullable is not set, so it defaults to false — must be rejected.
+				testtemplate.FieldTemplate{Name: "score", DataType: "Int64"},
+			),
+		},
+	}
+
+	resource.Test(s.T(), resource.TestCase{
+		PreCheck:                 func() { provider.PreCheck(s.T()) },
+		ProtoV6ProviderFactories: provider.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckCollectionDestroyed(s.testCollectionName),
+		Steps: []resource.TestStep{
+			// Step 1: Create the base collection.
+			{
+				Config: base.Render(),
+				Check:  testAccCheckCollectionExists("milvus_collection.test"),
+			},
+			// Step 2: Attempt to add a non-nullable field — must fail with a
+			// descriptive error pointing the user to set nullable = true.
+			{
+				Config:      withNonNullable.Render(),
+				ExpectError: regexp.MustCompile(fmt.Sprintf(`Field "score" is being added to the existing collection %q`, s.testCollectionName)),
 			},
 		},
 	})
